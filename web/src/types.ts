@@ -126,6 +126,7 @@ export type CaseEvent =
   | { type: "verdict"; payload: { markdown: string } }
   | { type: "amends"; payload: AmendsResult }
   | { type: "closed"; payload: { caseId: string; caseFile: string } }
+  | { type: "note"; payload: { level: "info" | "warn"; text: string } }
   | { type: "error"; payload: { message: string } };
 
 export type EventType = CaseEvent["type"];
@@ -147,6 +148,7 @@ export const EVENT_TYPES: EventType[] = [
   "verdict",
   "amends",
   "closed",
+  "note",
   "error",
 ];
 

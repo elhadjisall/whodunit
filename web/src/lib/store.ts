@@ -340,6 +340,9 @@ export function reduce(prev: CaseState, action: Action): CaseState {
       if (state.status !== "error") state.status = "closed";
       push("sys", `CASE CLOSED ▸ ${event.payload.caseFile}`);
       break;
+    case "note":
+      push(event.payload.level === "warn" ? "warn" : "sys", event.payload.text);
+      break;
     case "error":
       state.error = event.payload.message;
       if (!state.culprit) state.status = "error";

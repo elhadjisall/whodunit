@@ -13,6 +13,8 @@
     "dev:web": "vite --config web/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit",
     "play": "npm run build:web && tsx src/server.ts",
+    "demo": "bash scripts/demo.sh",
+    "demo:offline": "bash scripts/demo.sh --offline",
     "demo:snapshot": "node scripts/extract-demo-commits.mjs",
     "es:start": "bash scripts/es-local.sh start",
     "es:stop": "bash scripts/es-local.sh stop",

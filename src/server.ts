@@ -86,12 +86,17 @@ async function readBody(req: http.IncomingMessage): Promise<string> {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-async function ensureDemoIndexed(repoPath: string) {
-  const es = await pingEs();
-  if (!es.ok) throw new Error(`Elasticsearch is down at ${config.esUrl}. Run: npm run es:start`);
+/** Generate the demo repo if missing and index it if Elasticsearch is up. Never fatal: without ES the UI runs in simulation mode. */
+async function ensureDemoIndexed(repoPath: string): Promise<boolean> {
   if (!fs.existsSync(path.join(repoPath, ".git"))) {
     ui.info("Generating the acme-ledger crime scene…");
     await generateDemo(repoPath);
+  }
+  const es = await pingEs();
+  if (!es.ok) {
+    ui.warn(`Elasticsearch unreachable at ${config.esUrl} (${es.error}) — serving the UI in OFFLINE / simulation mode.`);
+    ui.info("Start a node with `npm run es:start` or set ELASTICSEARCH_URL / ELASTICSEARCH_API_KEY, then restart for live cases.");
+    return false;
   }
   const name = await repoName(repoPath);
   let n = 0;
@@ -104,6 +109,7 @@ async function ensureDemoIndexed(repoPath: string) {
     ui.info(`Indexing ${repoPath} into Elasticsearch…`);
     await ingestRepo({ repoPath, reset: true });
   }
+  return true;
 }
 
 const num = (v: unknown, fallback: number, lo: number, hi: number) => {
@@ -113,9 +119,9 @@ const num = (v: unknown, fallback: number, lo: number, hi: number) => {
 
 export async function startPlayServer(opts: { port: number; repoPath?: string }) {
   const repoPath = path.resolve(opts.repoPath ?? DEMO_REPO);
-  await ensureDemoIndexed(repoPath);
+  const esUp = await ensureDemoIndexed(repoPath);
   const repo = await repoName(repoPath);
-  const commitCount = (await listCommits(repo)).length;
+  const commitCount = esUp ? (await listCommits(repo)).length : (await gitLog(repoPath)).length;
   const hasDist = fs.existsSync(path.join(webRoot, "index.html"));
   if (!hasDist) ui.warn("web/dist is missing — run `npm run build:web` to build the detective UI.");
 

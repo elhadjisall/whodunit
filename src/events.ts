@@ -53,6 +53,8 @@ export type CaseEvent =
   | { type: "verdict"; payload: { markdown: string } }
   | { type: "amends"; payload: AmendsResult }
   | { type: "closed"; payload: { caseId: string; caseFile: string } }
+  /** operational chatter worth showing the player (rate-limit retries, fallbacks) */
+  | { type: "note"; payload: { level: "info" | "warn"; text: string } }
   | { type: "error"; payload: { message: string } };
 
 export type CaseEmitter = (event: CaseEvent) => void;

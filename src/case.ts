@@ -10,7 +10,7 @@ import { investigate, type Investigation } from "./agent/investigate.js";
 import { synthesizeRepro, validateTest, type ReproTest } from "./agent/repro.js";
 import { writeVerdict } from "./agent/verdict.js";
 import { makeAmends, type AmendsResult } from "./agent/amends.js";
-import { hasLLM, llmLabel } from "./agent/llm.js";
+import { hasLLM, llmLabel, onLlmRetry } from "./agent/llm.js";
 import { ui } from "./ui.js";
 import { publicCommit, type CaseEmitter, type ChooseProbe } from "./events.js";
 
@@ -73,6 +73,11 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   const caseDir = path.join(config.homeDir, "cases", caseId);
   await fs.mkdir(caseDir, { recursive: true });
   const emit: CaseEmitter = (e) => opts.onEvent?.(e);
+  // Surface rate-limit backoff in the UI (and CLI) instead of stalling silently.
+  onLlmRetry((text) => {
+    ui.warn(text);
+    emit({ type: "note", payload: { level: "warn", text: `BRAIN ▸ ${text}` } });
+  });
 
   ui.section("CASE FILE");
   ui.kv("repo", repo);
