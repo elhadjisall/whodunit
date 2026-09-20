@@ -16,7 +16,7 @@ function Gauge({ value, max, label, tone, sub }: { value: number; max: number; l
   };
   return (
     <div className="relative">
-      <svg viewBox="0 0 100 60" className="w-full">
+      <svg viewBox="0 0 100 60" className="mx-auto h-[60px] w-full">
         <path d={arc(0, 180)} fill="none" stroke="rgba(235,220,185,0.15)" strokeWidth="7" strokeLinecap="round" />
         <motion.path d={arc(0, 180)} fill="none" stroke={tone === "red" ? "#e63946" : "#9a9384"} strokeWidth="7" strokeLinecap="round" initial={{ pathLength: 0 }} animate={{ pathLength: frac }} transition={{ type: "spring", stiffness: 60, damping: 16 }} style={{ pathLength: frac }} />
         {Array.from({ length: 11 }).map((_, i) => {
@@ -28,9 +28,9 @@ function Gauge({ value, max, label, tone, sub }: { value: number; max: number; l
           <circle cx="50" cy="52" r="3.5" fill="#0b0b0d" stroke="#ebdcb9" strokeWidth="1" />
         </motion.g>
       </svg>
-      <div className="-mt-3 text-center">
-        <div className={cx("font-poster text-[22px] leading-none", tone === "red" ? "text-crime" : "text-manila")}>{label}</div>
-        {sub && <div className="mt-[2px] font-mono text-[9px] text-manila/60">{sub}</div>}
+      <div className="-mt-2 text-center">
+        <div className={cx("font-poster text-[21px] leading-none", tone === "red" ? "text-crime" : "text-manila")}>{label}</div>
+        {sub && <div className="mt-[2px] truncate font-mono text-[9px] text-manila/60">{sub}</div>}
       </div>
     </div>
   );
@@ -91,25 +91,21 @@ export function Barometer({
       </div>
 
       {/* entropy strip */}
-      <div className="mt-1.5 rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
+      <div className="mt-1.5 rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10" title="Shannon entropy of the posterior over the lineup. Uniform = what git bisect knows; prior = after Elasticsearch evidence; now = after the probes so far.">
         <div className="flex justify-between text-manila/60">
-          <span>uncertainty (bits)</span>
           <span>
-            uniform {state.prior ? state.prior.uniformBits.toFixed(2) : Math.log2(n - 1).toFixed(2)} → prior {state.prior ? state.prior.entropyBits.toFixed(2) : "—"} → now{" "}
-            <span className="text-manila">{state.prior ? entropyNow.toFixed(2) : "—"}</span>
+            uncertainty · uniform {state.prior ? state.prior.uniformBits.toFixed(2) : Math.log2(n - 1).toFixed(2)} → prior {state.prior ? state.prior.entropyBits.toFixed(2) : "—"} → now{" "}
+            <span className="text-manila">{state.prior ? entropyNow.toFixed(2) : "—"}</span> bits
           </span>
+          <span className="text-manila/50">{state.culprit ? `saved ${Math.max(0, gitSteps - probes)} test runs` : state.prior ? `90% set: ${state.prior.credible90} commits` : "each probe ≈ 1 bit"}</span>
         </div>
         <div className="mt-1 h-[6px] w-full overflow-hidden rounded-sm bg-manila/10">
           <motion.div className="h-full bg-gradient-to-r from-crime to-amber" animate={{ width: `${state.prior ? Math.max(2, (entropyNow / state.prior.uniformBits) * 100) : 100}%` }} transition={{ type: "spring", stiffness: 80, damping: 18 }} />
         </div>
-        <div className="mt-1 flex justify-between text-manila/50">
-          <span>90% credible set: {state.prior ? `${state.prior.credible90} commits` : "—"}</span>
-          <span>{state.culprit ? `saved ${Math.max(0, gitSteps - probes)} test runs` : `each probe ≈ 1 bit`}</span>
-        </div>
       </div>
 
       {/* ledger */}
-      <div className="mt-1.5 min-h-[56px] flex-1 overflow-auto rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
+      <div className="mt-1.5 min-h-[44px] flex-1 overflow-auto rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
         <div className="grid grid-cols-[18px_1fr_44px_58px] gap-x-1 text-manila/40">
           <span>#</span>
           <span>interrogated</span>
@@ -165,6 +161,7 @@ export function Barometer({
         </div>
         <button
           disabled={locked}
+          title="Every probe is a noisy observation with flake rate ε; a single lie cannot send the search down the wrong branch for good. Turn this on and the oracle will lie once during the case."
           onClick={() => {
             sfxKey();
             const next = !flaky;
@@ -181,9 +178,11 @@ export function Barometer({
             <span className={cx("absolute top-[2px] h-[10px] w-[10px] rounded-full bg-ink transition", flaky ? "left-[14px]" : "left-[2px]")} />
           </span>
         </button>
-        <p className="mt-1 font-mono text-[8px] leading-snug text-manila/40">
-          {flaky ? "The oracle will lie once. Watch git bisect get derailed while the posterior absorbs the lie as ε-noise and re-interrogates." : "Every probe is a noisy observation with flake rate ε; a single lie cannot send the search down the wrong branch for good."}
-        </p>
+        {flaky && (
+          <p className="mt-1 line-clamp-2 font-mono text-[8px] leading-snug text-amber/70">
+            The oracle will lie once. Watch git bisect get derailed while the posterior absorbs the lie as ε-noise and re-interrogates.
+          </p>
+        )}
       </div>
     </div>
   );

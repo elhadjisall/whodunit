@@ -29,7 +29,7 @@ export function ComplaintDesk({
   const live = !!server?.es;
 
   return (
-    <div className="paper torn-bottom relative flex flex-col p-3 pb-5">
+    <div className="paper torn-bottom relative flex flex-col p-3 pb-4">
       <div className="tape-strip -left-4 top-3" style={{ ["--r" as string]: "-6deg" }} />
       <div className="tape-strip -right-3 top-6" style={{ ["--r" as string]: "5deg", width: 70 }} />
 
@@ -41,7 +41,7 @@ export function ComplaintDesk({
       </div>
 
       <label className="mt-1.5 font-type text-[10px] uppercase tracking-widest text-neutral-600">Statement of the aggrieved developer</label>
-      <div className="relative mt-1 h-[90px] shrink-0">
+      <div className="relative mt-1 h-[80px] shrink-0">
         <textarea
           value={complaint}
           disabled={running}
@@ -70,7 +70,7 @@ export function ComplaintDesk({
         <span className="truncate">{state.vectors ?? server?.vectors ?? "gemini"} · 768d</span>
       </div>
 
-      <div className="mt-2 flex flex-col gap-1.5">
+      <div className="mt-1.5 flex flex-col gap-1">
         {!done ? (
           <motion.button
             whileTap={{ scale: 0.98 }}
@@ -80,7 +80,7 @@ export function ComplaintDesk({
               onRelease();
             }}
             className={cx(
-              "flex w-full items-center justify-center gap-2 rounded-sm border-2 border-crime-2 bg-crime px-3 py-2 font-poster text-[17px] tracking-[0.12em] text-white shadow-[0_4px_0_#7d1520] transition",
+              "flex w-full items-center justify-center gap-2 rounded-sm border-2 border-crime-2 bg-crime px-3 py-1.5 font-poster text-[17px] tracking-[0.12em] text-white shadow-[0_4px_0_#7d1520] transition",
               "hover:brightness-110 active:translate-y-[2px] active:shadow-[0_2px_0_#7d1520] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0",
             )}
           >
@@ -95,7 +95,7 @@ export function ComplaintDesk({
             )}
           </motion.button>
         ) : (
-          <button onClick={onReset} className="flex w-full items-center justify-center gap-2 rounded-sm border-2 border-neutral-800 bg-neutral-900 px-3 py-2 font-poster text-[16px] tracking-[0.12em] text-manila shadow-[0_4px_0_#000] hover:brightness-125 active:translate-y-[2px]">
+          <button onClick={onReset} className="flex w-full items-center justify-center gap-2 rounded-sm border-2 border-neutral-800 bg-neutral-900 px-3 py-1.5 font-poster text-[17px] tracking-[0.12em] text-manila shadow-[0_4px_0_#000] hover:brightness-125 active:translate-y-[2px]">
             <RotateCcw size={16} /> REOPEN THE DESK
           </button>
         )}
