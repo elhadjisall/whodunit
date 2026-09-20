@@ -198,9 +198,9 @@ export default function App() {
         onOpenExtra={() => setExtraOpen(true)}
       />
 
-      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-[380px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_262px] gap-2 p-2">
+      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-[372px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_232px] gap-2 p-2">
         <aside className="flex min-h-0 flex-col gap-2">
-          <div className="h-[318px] shrink-0">
+          <div className="shrink-0">
             <ComplaintDesk complaint={complaint} setComplaint={setComplaint} state={state} server={server} caseLabel={caseLabel} onRelease={onRelease} onSimulate={onSimulate} onReset={onReset} />
           </div>
           <div className="min-h-0 flex-1">
@@ -208,7 +208,7 @@ export default function App() {
           </div>
         </aside>
 
-        <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_150px] gap-2">
+        <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_140px] gap-2">
           <CorkBoard state={state} onInterrogate={onInterrogate} onAuto={onAuto} setHover={setHover} />
           <TimelineRail state={state} onInterrogate={onInterrogate} setHover={setHover} />
         </section>

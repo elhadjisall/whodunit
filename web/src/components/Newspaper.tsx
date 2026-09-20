@@ -27,11 +27,11 @@ function LineupCard({ commit, verdict, tone, note }: { commit: PublicCommit; ver
       <div className="w-[88px] shrink-0 bg-white p-1 shadow">
         <Mugshot commit={commit} size={70} />
       </div>
-      <div className="min-w-0 flex-1 font-mono text-[10px] leading-snug">
-        <div className="font-bold">
+      <div className="min-w-0 flex-1 break-words font-mono text-[10px] leading-snug">
+        <div className="pr-24 font-bold">
           #{commit.index} {commit.short}
         </div>
-        <div className="font-news text-[11px] italic">{commit.subject}</div>
+        <div className="pr-24 font-news text-[11px] italic">{commit.subject}</div>
         <div className="text-neutral-600">
           {commit.author} · {fmtDate(commit.date)}
         </div>
@@ -128,9 +128,9 @@ export function Newspaper({
               . Posterior confidence <b>{pct(culprit.confidence, 1)}</b>. Elasticsearch evidence cited below.
             </p>
 
-            <div className="mt-4 grid grid-cols-[1.25fr_1fr] gap-6">
+            <div className="mt-4 grid grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-6">
               {/* verdict */}
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 border-b-2 border-black pb-1 font-news text-[12px] font-bold uppercase tracking-widest">
                   <NewsIcon size={13} /> The cited verdict
                 </div>
@@ -150,7 +150,7 @@ export function Newspaper({
               </div>
 
               {/* lineup + fix */}
-              <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                 <div className="border-b-2 border-black pb-1 font-news text-[12px] font-bold uppercase tracking-widest">The lineup: red herring vs. the real regression</div>
                 {herring && <LineupCard commit={herring.commit} verdict="EXONERATED" tone="green" note={`Why suspected: ${herring.reason.slice(0, 150)} — ${herring.why}`} />}
                 <LineupCard commit={c} verdict="CULPRIT" tone="red" note={`Bracketed by the oracle: #${c.index - 1} passes, #${c.index} fails. Touched ${c.files.filter((f) => f.startsWith("src/")).join(", ") || c.files.join(", ")}.`} />
@@ -231,8 +231,8 @@ export function Newspaper({
               </div>
             </div>
 
-            <div className="pointer-events-none absolute right-10 top-24">
-              <Stamp text="CASE CLOSED" tone="red" size="xl" rotate={-16} heavy delay={1.1} />
+            <div className="pointer-events-none absolute right-14 top-9">
+              <Stamp text="CASE CLOSED" tone="red" size="lg" rotate={-14} heavy delay={1.1} />
             </div>
           </motion.article>
         </motion.div>

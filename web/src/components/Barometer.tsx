@@ -64,14 +64,14 @@ export function Barometer({
   })();
 
   return (
-    <div className="flex h-full flex-col rounded-sm bg-charcoal-2/80 p-2.5 ring-1 ring-black/40">
+    <div className="flex h-full flex-col overflow-y-auto rounded-sm bg-charcoal-2/80 p-2 ring-1 ring-black/40">
       <div className="flex items-center gap-2">
         <span className="tape px-1.5 py-[1px] font-mono text-[9px] font-bold tracking-[0.2em]">BAYESIAN PROBE BAROMETER</span>
         <Scale size={12} className="text-manila/60" />
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <div className="rounded-sm bg-ink/50 p-2 ring-1 ring-manila/10">
+      <div className="mt-1.5 grid grid-cols-2 gap-2">
+        <div className="rounded-sm bg-ink/50 p-1.5 ring-1 ring-manila/10">
           <div className="flex items-center gap-1 font-mono text-[9px] tracking-widest text-manila/60">
             <GitFork size={10} /> STANDARD git bisect
           </div>
@@ -82,7 +82,7 @@ export function Barometer({
             </div>
           )}
         </div>
-        <div className="rounded-sm bg-ink/50 p-2 ring-1 ring-crime/30">
+        <div className="rounded-sm bg-ink/50 p-1.5 ring-1 ring-crime/30">
           <div className="flex items-center gap-1 font-mono text-[9px] tracking-widest text-crime">
             <Activity size={10} /> WHODUNIT weighted median
           </div>
@@ -91,7 +91,7 @@ export function Barometer({
       </div>
 
       {/* entropy strip */}
-      <div className="mt-2 rounded-sm bg-ink/40 p-2 font-mono text-[9px] ring-1 ring-manila/10">
+      <div className="mt-1.5 rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
         <div className="flex justify-between text-manila/60">
           <span>uncertainty (bits)</span>
           <span>
@@ -109,7 +109,7 @@ export function Barometer({
       </div>
 
       {/* ledger */}
-      <div className="mt-2 min-h-0 flex-1 overflow-auto rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
+      <div className="mt-1.5 min-h-[56px] flex-1 overflow-auto rounded-sm bg-ink/40 p-1.5 font-mono text-[9px] ring-1 ring-manila/10">
         <div className="grid grid-cols-[18px_1fr_44px_58px] gap-x-1 text-manila/40">
           <span>#</span>
           <span>interrogated</span>
@@ -142,31 +142,26 @@ export function Barometer({
       </div>
 
       {/* controls */}
-      <div className="mt-2 rounded-sm bg-ink/40 p-2 ring-1 ring-manila/10">
-        <div className="flex items-center justify-between font-mono text-[9px] text-manila/70">
-          <span className="flex items-center gap-1">
-            <Dices size={10} /> FLAKY TEST TOLERANCE
+      <div className="mt-1.5 shrink-0 rounded-sm bg-ink/40 p-1.5 ring-1 ring-manila/10">
+        <div className="flex items-center gap-2 font-mono text-[9px] text-manila/70">
+          <span className="flex shrink-0 items-center gap-1">
+            <Dices size={10} /> FLAKY TOLERANCE
           </span>
-          <span className="tabular-nums text-manila">ε = {eps.toFixed(2)}</span>
-        </div>
-        <input
-          type="range"
-          min={0.01}
-          max={0.3}
-          step={0.01}
-          value={eps}
-          disabled={locked}
-          onChange={(e) => {
-            setEps(Number(e.target.value));
-            sfxKey();
-          }}
-          className="mt-1 w-full accent-crime disabled:opacity-50"
-          title="How likely a single test run is to lie. Higher ε → the detective re-tests before condemning."
-        />
-        <div className="flex justify-between font-mono text-[8px] text-manila/40">
-          <span>0.01 trusting</span>
-          <span>0.10 flaky suite</span>
-          <span>0.30 chaos</span>
+          <input
+            type="range"
+            min={0.01}
+            max={0.3}
+            step={0.01}
+            value={eps}
+            disabled={locked}
+            onChange={(e) => {
+              setEps(Number(e.target.value));
+              sfxKey();
+            }}
+            className="min-w-0 flex-1 accent-crime disabled:opacity-50"
+            title="How likely a single test run is to lie. Higher ε → the detective re-tests before condemning. 0.10 suits a flaky suite."
+          />
+          <span className="w-[52px] shrink-0 text-right tabular-nums text-manila">ε = {eps.toFixed(2)}</span>
         </div>
         <button
           disabled={locked}
@@ -177,11 +172,11 @@ export function Barometer({
             if (next && eps < 0.1) setEps(0.1);
           }}
           className={cx(
-            "mt-2 flex w-full items-center justify-between rounded-sm border px-2 py-1 font-mono text-[10px] tracking-wider transition disabled:opacity-60",
+            "mt-1.5 flex w-full items-center justify-between rounded-sm border px-2 py-1 font-mono text-[10px] tracking-wider transition disabled:opacity-60",
             flaky ? "border-amber bg-amber/20 text-amber" : "border-manila/20 text-manila/60 hover:border-manila/40",
           )}
         >
-          <span>SIMULATE FLAKY ORACLE</span>
+          <span>SIMULATE FLAKY ORACLE {flaky && <span className="ml-1 text-[8px]">· ε≥0.10</span>}</span>
           <span className={cx("relative inline-block h-[14px] w-[26px] rounded-full transition", flaky ? "bg-amber" : "bg-manila/20")}>
             <span className={cx("absolute top-[2px] h-[10px] w-[10px] rounded-full bg-ink transition", flaky ? "left-[14px]" : "left-[2px]")} />
           </span>

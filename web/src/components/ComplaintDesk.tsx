@@ -29,7 +29,7 @@ export function ComplaintDesk({
   const live = !!server?.es;
 
   return (
-    <div className="paper torn-bottom relative flex h-full flex-col p-3 pb-5">
+    <div className="paper torn-bottom relative flex flex-col p-3 pb-5">
       <div className="tape-strip -left-4 top-3" style={{ ["--r" as string]: "-6deg" }} />
       <div className="tape-strip -right-3 top-6" style={{ ["--r" as string]: "5deg", width: 70 }} />
 
@@ -40,8 +40,8 @@ export function ComplaintDesk({
         <span className="font-mono text-[9px] text-neutral-600">FORM DCF-12 · {caseLabel}</span>
       </div>
 
-      <label className="mt-2 font-type text-[10px] uppercase tracking-widest text-neutral-600">Statement of the aggrieved developer</label>
-      <div className="relative mt-1 flex-1">
+      <label className="mt-1.5 font-type text-[10px] uppercase tracking-widest text-neutral-600">Statement of the aggrieved developer</label>
+      <div className="relative mt-1 h-[90px] shrink-0">
         <textarea
           value={complaint}
           disabled={running}
@@ -53,24 +53,24 @@ export function ComplaintDesk({
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !running) onRelease();
           }}
           spellCheck={false}
-          className="h-full min-h-[96px] w-full resize-none bg-transparent font-type text-[13px] leading-[1.35] text-type outline-none placeholder:text-neutral-500 disabled:opacity-70"
+          className="h-full w-full resize-none bg-transparent font-type text-[12.5px] leading-[18px] text-type outline-none placeholder:text-neutral-500 disabled:opacity-70"
           style={{ backgroundImage: "repeating-linear-gradient(180deg, transparent 0 17px, rgba(0,0,0,0.12) 17px 18px)", backgroundAttachment: "local" }}
           placeholder="Describe the regression as you would to a very patient detective…"
         />
       </div>
 
-      <div className="mt-2 grid grid-cols-[auto_1fr] gap-x-2 gap-y-[2px] font-mono text-[9px] text-neutral-700">
+      <div className="mt-1.5 grid grid-cols-[auto_1fr_auto_1fr] gap-x-2 gap-y-[1px] font-mono text-[9px] text-neutral-700">
         <span className="text-neutral-500">repo</span>
-        <span className="truncate">{state.repo ?? server?.repo ?? "acme-ledger"} {state.range ? `· ${state.range}` : ""}</span>
+        <span className="truncate">{state.repo ?? server?.repo ?? "acme-ledger"}</span>
         <span className="text-neutral-500">lineup</span>
-        <span>{state.commits.length || server?.commitCount || 108} commits</span>
+        <span className="truncate">{state.commits.length || server?.commitCount || 108} commits{state.range ? ` · ${state.range}` : ""}</span>
         <span className="text-neutral-500">brain</span>
-        <span className="truncate">{state.brain ?? server?.brain ?? "gemini (simulated when offline)"}</span>
+        <span className="truncate">{state.brain ?? server?.brain ?? "gemini (simulated offline)"}</span>
         <span className="text-neutral-500">vectors</span>
-        <span>{state.vectors ?? server?.vectors ?? "gemini-embedding-001 · 768d"}</span>
+        <span className="truncate">{state.vectors ?? server?.vectors ?? "gemini"} · 768d</span>
       </div>
 
-      <div className="mt-3 flex flex-col gap-1.5">
+      <div className="mt-2 flex flex-col gap-1.5">
         {!done ? (
           <motion.button
             whileTap={{ scale: 0.98 }}

@@ -35,28 +35,29 @@ export function TopBar({
 }) {
   const live = !!server?.es;
   return (
-    <header className="relative z-40 flex h-[58px] items-stretch gap-3 border-b border-black/60 bg-charcoal-2/90 px-3 shadow-[0_6px_20px_-10px_rgba(0,0,0,0.9)] backdrop-blur">
+    <header className="relative z-40 flex h-[58px] items-stretch gap-2 overflow-hidden whitespace-nowrap border-b border-black/60 bg-charcoal-2/90 px-3 shadow-[0_6px_20px_-10px_rgba(0,0,0,0.9)] backdrop-blur xl:gap-3">
       {/* badge + title */}
       <div className="flex items-center gap-2.5">
-        <div className="relative grid h-9 w-9 place-items-center rounded-full bg-gradient-to-b from-amber to-[#8a6212] text-ink shadow-[0_2px_0_#3a2a08,0_0_0_2px_#0b0b0d]">
+        <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-b from-amber to-[#8a6212] text-ink shadow-[0_2px_0_#3a2a08,0_0_0_2px_#0b0b0d]">
           <ShieldHalf size={18} />
         </div>
         <div className="leading-none">
-          <div className="font-type text-[13px] tracking-[0.16em] text-manila">DEPARTMENT OF CODE FORENSICS</div>
-          <div className="mt-[3px] font-mono text-[9px] tracking-[0.3em] text-manila/50">
-            // DIVISION 3DS-HTN · <span className="text-crime">WHODUNIT</span> · GIT BISECT WITH A BRAIN
+          <div className="font-type text-[12px] tracking-[0.14em] text-manila xl:text-[13px] xl:tracking-[0.16em]">DEPARTMENT OF CODE FORENSICS</div>
+          <div className="mt-[3px] font-mono text-[9px] tracking-[0.22em] text-manila/50 xl:tracking-[0.3em]">
+            // DIVISION 3DS-HTN · <span className="text-crime">WHODUNIT</span>
+            <span className="hidden 2xl:inline"> · GIT BISECT WITH A BRAIN</span>
           </div>
         </div>
       </div>
 
       {/* case tabs */}
-      <nav className="ml-4 flex items-end gap-1">
+      <nav className="ml-2 flex items-end gap-1 xl:ml-4">
         <button
           onClick={() => {
             sfxKey();
             setTab("108");
           }}
-          className={cx("folder-tab relative px-5 pb-1.5 pt-2 font-type text-[11px] uppercase tracking-wider transition", tab === "108" ? "paper text-type" : "bg-manila-3/30 text-manila/60 hover:bg-manila-3/50")}
+          className={cx("folder-tab relative px-4 pb-1.5 pt-2 font-type text-[11px] uppercase tracking-wider transition xl:px-5", tab === "108" ? "paper text-type" : "bg-manila-3/30 text-manila/60 hover:bg-manila-3/50")}
         >
           Case #108: The Missing Cent
         </button>
@@ -65,27 +66,33 @@ export function TopBar({
             sfxKey();
             setTab("cold");
           }}
-          className={cx("folder-tab relative flex items-center gap-1 px-4 pb-1.5 pt-2 font-type text-[11px] uppercase tracking-wider transition", tab === "cold" ? "paper text-type" : "bg-manila-3/20 text-manila/50 hover:bg-manila-3/40")}
+          className={cx("folder-tab relative flex items-center gap-1 px-3 pb-1.5 pt-2 font-type text-[11px] uppercase tracking-wider transition xl:px-4", tab === "cold" ? "paper text-type" : "bg-manila-3/20 text-manila/50 hover:bg-manila-3/40")}
         >
-          <Plus size={11} /> Open cold case
+          <Plus size={11} /> <span className="hidden lg:inline">Open </span>cold case
         </button>
       </nav>
 
-      <div className="flex-1" />
+      <div className="min-w-2 flex-1" />
 
       {/* connection */}
-      <div className="flex items-center">
-        <div className={cx("flex items-center gap-2 rounded-sm border px-2.5 py-1 font-mono text-[10px]", live ? "border-phosphor/40 bg-phosphor/10 text-phosphor" : "border-amber/40 bg-amber/10 text-amber")}>
+      <div className="flex min-w-0 items-center">
+        <div className={cx("flex min-w-0 items-center gap-2 truncate rounded-sm border px-2.5 py-1 font-mono text-[10px]", live ? "border-phosphor/40 bg-phosphor/10 text-phosphor" : "border-amber/40 bg-amber/10 text-amber")} title={live ? `${server?.esUrl ?? ""} · ${server?.brain ?? ""} · ${server?.vectors ?? ""}` : "Start the bureau with `npm run play` for a live case"}>
           <motion.span className={cx("led inline-block h-2 w-2 rounded-full", live ? "bg-phosphor" : "bg-amber")} animate={{ opacity: [1, 0.35, 1] }} transition={{ duration: live ? 1.6 : 0.7, repeat: Infinity }} />
           <Radio size={12} />
           {checking && !server ? (
             <span>DIALING 127.0.0.1:3333…</span>
           ) : live ? (
             <span>
-              LIVE WIRE · ES {server?.es} · {server?.brain ?? "heuristic"} · {server?.vectors}
+              LIVE WIRE · ES {server?.es}
+              <span className="hidden 2xl:inline">
+                {" "}
+                · {server?.brain ?? "heuristic"} · {server?.vectors}
+              </span>
             </span>
           ) : (
-            <span>OFFLINE · 127.0.0.1:3333 · SIMULATION MODE{simulated ? " (ACTIVE)" : ""}</span>
+            <span>
+              OFFLINE · <span className="hidden xl:inline">127.0.0.1:3333 · </span>SIMULATION{simulated ? " (ACTIVE)" : ""}
+            </span>
           )}
         </div>
       </div>
@@ -95,10 +102,10 @@ export function TopBar({
         <div className="flex rounded-sm border border-manila/20 bg-ink/60 p-[2px] font-mono text-[10px]">
           {(
             [
-              ["auto", "DETECTIVE AGENT", Bot, "Gemini investigates and probes autonomously"],
-              ["player", "MANUAL INTERROGATION", UserSearch, "You choose which commit to interrogate"],
+              ["auto", "DETECTIVE AGENT", "AGENT", Bot, "Gemini investigates and probes autonomously"],
+              ["player", "MANUAL INTERROGATION", "MANUAL", UserSearch, "You choose which commit to interrogate"],
             ] as const
-          ).map(([m, label, Icon, title]) => (
+          ).map(([m, label, shortLabel, Icon, title]) => (
             <button
               key={m}
               disabled={modeLocked}
@@ -107,9 +114,10 @@ export function TopBar({
                 sfxKey();
                 setMode(m);
               }}
-              className={cx("flex items-center gap-1.5 rounded-[2px] px-2.5 py-1 tracking-wider transition disabled:cursor-not-allowed", mode === m ? "bg-manila text-ink shadow" : "text-manila/60 hover:text-manila")}
+              className={cx("flex items-center gap-1.5 rounded-[2px] px-2 py-1 tracking-wider transition disabled:cursor-not-allowed xl:px-2.5", mode === m ? "bg-manila text-ink shadow" : "text-manila/60 hover:text-manila")}
             >
-              <Icon size={12} /> {label}
+              <Icon size={12} /> <span className="hidden xl:inline">{label}</span>
+              <span className="xl:hidden">{shortLabel}</span>
             </button>
           ))}
         </div>

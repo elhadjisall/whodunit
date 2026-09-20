@@ -42,7 +42,16 @@ export function CorkBoard({
 }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const { width, height } = useElementSize(boardRef);
-  const suspects = useMemo(() => topSuspects(state, 12), [state.commits, state.similarity]); // eslint-disable-line react-hooks/exhaustive-deps
+  const compact = height > 0 && height < 440;
+  const cardH = compact ? 142 : CARD_H;
+  // How many mugshots fit without overlapping? (rows × cols, capped at 12)
+  const capacity = useMemo(() => {
+    if (!width || !height) return 12;
+    const rows = Math.max(1, Math.floor((height - 44) / (cardH + 16)));
+    const cols = Math.max(1, Math.floor((width - 32) / (CARD_W + 14)));
+    return Math.max(1, Math.min(12, rows * cols));
+  }, [width, height, cardH]);
+  const suspects = useMemo(() => topSuspects(state, capacity), [state.commits, state.similarity, capacity]); // eslint-disable-line react-hooks/exhaustive-deps
   const cardEls = useRef(new Map<number, HTMLElement>());
   const [anchors, setAnchors] = useState<Record<number, { x: number; y: number }>>({});
   const interactive = state.status === "awaiting";
@@ -51,23 +60,24 @@ export function CorkBoard({
   const layout = useMemo(() => {
     const n = suspects.length;
     if (!n || !width || !height) return new Map<number, { x: number; y: number; r: number; z: number }>();
-    const pad = 22;
-    const rows = n <= 6 ? 1 : n <= 10 ? 2 : 3;
-    const cols = Math.ceil(n / rows);
+    const pad = 18;
+    const maxCols = Math.max(1, Math.floor((width - 32) / (CARD_W + 14)));
+    const cols = Math.min(n, maxCols);
+    const rows = Math.ceil(n / cols);
     const cellW = (width - pad * 2) / cols;
-    const cellH = (height - pad * 2 - 20) / rows;
+    const cellH = (height - pad * 2 - 22) / rows;
     const m = new Map<number, { x: number; y: number; r: number; z: number }>();
     suspects.forEach((c, i) => {
       const row = Math.floor(i / cols);
       const col = i % cols;
       const jx = (hash01(c.sha, 1) - 0.5) * Math.min(28, Math.max(0, cellW - CARD_W));
-      const jy = (hash01(c.sha, 2) - 0.5) * Math.min(24, Math.max(0, cellH - CARD_H));
+      const jy = (hash01(c.sha, 2) - 0.5) * Math.min(20, Math.max(0, cellH - cardH));
       const x = pad + col * cellW + (cellW - CARD_W) / 2 + jx;
-      const y = pad + 18 + row * cellH + (cellH - CARD_H) / 2 + jy;
-      m.set(c.index, { x: Math.max(4, Math.min(width - CARD_W - 4, x)), y: Math.max(14, Math.min(height - CARD_H - 4, y)), r: (hash01(c.sha, 3) - 0.5) * 9, z: 10 + i });
+      const y = pad + 22 + row * cellH + (cellH - cardH) / 2 + jy;
+      m.set(c.index, { x: Math.max(4, Math.min(width - CARD_W - 4, x)), y: Math.max(16, Math.min(height - cardH - 4, y)), r: (hash01(c.sha, 3) - 0.5) * 9, z: 10 + i });
     });
     return m;
-  }, [suspects, width, height]);
+  }, [suspects, width, height, cardH]);
 
   // Track live card anchors (pin positions) for the yarn, through springs and drags.
   useEffect(() => {
@@ -195,6 +205,7 @@ export function CorkBoard({
                 rotate={base.r}
                 z={base.z}
                 interactive={interactive}
+                compact={compact}
                 dragRef={boardRef}
                 onHover={(e) => setHover({ commit: c, x: e.clientX, y: e.clientY })}
                 onLeave={() => setHover(null)}

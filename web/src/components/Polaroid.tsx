@@ -117,7 +117,7 @@ export function Polaroid({
       <div className={cx("polaroid relative p-1.5 pb-2", compact && "p-1 pb-1.5")}>
         <Mugshot commit={commit} size={compact ? 64 : 84} />
         <div className="mt-1.5 px-0.5">
-          <div className="font-type text-[10px] leading-[1.15] text-neutral-900" style={{ height: compact ? 22 : 34, overflow: "hidden" }}>
+          <div className={cx("font-type text-[10px] leading-[1.15] text-neutral-900", compact ? "line-clamp-2" : "line-clamp-3")} style={{ height: compact ? 23 : 35 }}>
             {commit.subject}
           </div>
           <div className="mt-1 flex items-center gap-1">

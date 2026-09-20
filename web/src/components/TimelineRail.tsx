@@ -39,32 +39,31 @@ export function TimelineRail({
   }
 
   return (
-    <div className="relative flex h-full flex-col rounded-sm bg-charcoal-2/80 px-3 pb-1 pt-5 ring-1 ring-black/40">
+    <div className="relative flex h-full flex-col rounded-sm bg-charcoal-2/80 px-3 pb-1 pt-1 ring-1 ring-black/40">
       {/* header labels */}
-      <div className="absolute left-3 top-1 flex items-center gap-3 font-mono text-[9px] tracking-widest text-manila/60">
-        <span className="tape px-1.5 text-[9px] font-bold">FORENSIC TIMELINE</span>
-        <span>
-          #{0} {state.commits[0].short} <span className="text-emerald-400">known good</span>
-        </span>
-        <span className="text-manila/30">→</span>
-        <span>
-          #{n - 1} {state.commits[n - 1].short} <span className="text-crime">known bad (HEAD)</span>
-        </span>
-      </div>
-      <div className="absolute right-3 top-1 flex items-center gap-3 font-mono text-[9px] text-manila/60">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rotate-45 bg-crime" /> bayes probe
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rotate-45 border border-manila/60" /> git bisect would probe
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-3 bg-manila/10" /> still possible [{lo}‥{hi}]
-        </span>
+      <div className="flex items-center justify-between gap-3 overflow-hidden whitespace-nowrap font-mono text-[9px] text-manila/60">
+        <div className="flex min-w-0 items-center gap-3 tracking-widest">
+          <span className="tape shrink-0 px-1.5 text-[9px] font-bold">FORENSIC TIMELINE</span>
+          <span className="truncate">
+            #{0} {state.commits[0].short} <span className="text-emerald-400">known good</span> <span className="text-manila/30">→</span> #{n - 1} {state.commits[n - 1].short}{" "}
+            <span className="text-crime">known bad (HEAD)</span>
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rotate-45 bg-crime" /> bayes
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rotate-45 border border-manila/60" /> git bisect
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-3 bg-manila/10" /> possible [{lo}‥{hi}]
+          </span>
+        </div>
       </div>
 
       {/* ticks */}
-      <div className="relative mt-1 flex-1">
+      <div className="relative mt-5 flex-1">
         {/* possible bracket */}
         <motion.div
           className="absolute bottom-0 top-0 rounded-sm bg-manila/[0.07] ring-1 ring-manila/10"
