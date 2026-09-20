@@ -1,30 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>whodunit — Precinct 9200</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Special+Elite&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
-</head>
-<body>
-  <div class="grain"></div>
-  <div class="vignette"></div>
-  <div id="lamp"></div>
-
-  <header class="topbar">
-    <div class="badge">PRECINCT 9200 · SOFTWARE CRIMES</div>
-    <div class="meta" id="statusLine">warming up the coffee…</div>
-  </header>
-
-  <main id="stage"></main>
-
-  <footer class="ticker" id="ticker">
-    <span>waiting for a complaint</span>
-  </footer>
-
-  <script src="/app.js"></script>
-</body>
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Whodunit — Git Bisect with a Brain</title>
+    <meta name="description" content="Department of Code Forensics. An Elasticsearch-backed Bayesian detective that finds the commit that broke your code." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23E63946'/%3E%3Ccircle cx='32' cy='32' r='14' fill='none' stroke='%23EBDCB9' stroke-width='6'/%3E%3Cpath d='M42 42 L56 56' stroke='%23EBDCB9' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=UnifrakturCook:wght@700&family=Anton&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

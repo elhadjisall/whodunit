@@ -229,6 +229,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       step++;
       const c = commits[k];
       const pb = pBad(state, k);
+      emit({ type: "targeting", payload: { step, index: k, commit: pub(c), pBad: pb, by } });
       const r = await runAt(pool, c.sha, test.command, { setup: opts.setup, timeoutMs: opts.timeoutMs });
       const truth: "good" | "bad" = r.exitCode === 0 ? "good" : "bad";
       // Simulated flaky oracle (demo): sometimes the test lies. The Bayesian update treats every

@@ -46,6 +46,7 @@ export type CaseEvent =
   | { type: "repro"; payload: { explanation: string; command: string; headOutput: string } }
   | { type: "prior"; payload: { entropyBits: number; uniformBits: number; uniformProbes: number; credible90: number; board: PublicCommit[] } }
   | { type: "awaiting_probe"; payload: { step: number; autoIndex: number | null; autoCommit?: PublicCommit; board: PublicCommit[]; message: string } }
+  | { type: "targeting"; payload: { step: number; index: number; commit: PublicCommit; pBad: number; by: "detective" | "player" } }
   | { type: "probe"; payload: { step: number; index: number; commit: PublicCommit; result: "good" | "bad"; pBad: number; durationMs: number; by: "detective" | "player"; flaked?: boolean } }
   | { type: "posterior"; payload: { board: PublicCommit[]; highlight?: number } }
   | { type: "culprit"; payload: { commit: PublicCommit; confidence: number; probes: number; uniformSteps: number } }

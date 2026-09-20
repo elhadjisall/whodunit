@@ -1,0 +1,1326 @@
+{
+ "repo": "acme-ledger",
+ "generatedAt": "2026-09-20T05:35:59.453Z",
+ "commits": [
+  {
+   "index": 0,
+   "sha": "b4f9e3efa04bfda0e5954457aeb0e681bcd8f354",
+   "short": "b4f9e3e",
+   "author": "Priya Natarajan",
+   "date": "2026-06-12T21:41:25Z",
+   "subject": "chore: scaffold @acme/ledger with money helpers",
+   "files": [
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "CHANGELOG.md",
+    "README.md",
+    "package.json",
+    "src/money.js",
+    "test/money.test.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 1,
+   "sha": "03d1c18a0f466935a9c464ec47e325392e7f80f1",
+   "short": "03d1c18",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-13T01:47:24Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 2,
+   "sha": "fa72e6ef9d476e8e558792803ace3d4b040877ce",
+   "short": "fa72e6e",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-13T06:36:36Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 3,
+   "sha": "a8b32bad20cbd512e7c99b113811195663706428",
+   "short": "a8b32ba",
+   "author": "Marcus Chen",
+   "date": "2026-06-13T11:18:55Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 4,
+   "sha": "4ccf760faaa6a716c9e486bdc517f2b36891c0f0",
+   "short": "4ccf760",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-14T03:00:45Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 5,
+   "sha": "16793bd73642e1bb84e27a12ad3f2a11c45461fd",
+   "short": "16793bd",
+   "author": "Tomasz Nowak",
+   "date": "2026-06-14T13:23:14Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 6,
+   "sha": "9014c3a141ee57dfa0ac49e76dd8b97c900b9d8e",
+   "short": "9014c3a",
+   "author": "Marcus Chen",
+   "date": "2026-06-15T15:42:49Z",
+   "subject": "feat(tax): add combined GST/HST/PST rate table by province",
+   "files": [
+    "src/tax.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 7,
+   "sha": "6aa255e75a84aadac1762874b512fc7c6f88ae4f",
+   "short": "6aa255e",
+   "author": "Tomasz Nowak",
+   "date": "2026-06-16T08:55:17Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 8,
+   "sha": "1e637ebd2f56b4ab9fab5ae74ac633b537cc76c8",
+   "short": "1e637eb",
+   "author": "Dev Patel",
+   "date": "2026-06-17T06:37:17Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 9,
+   "sha": "86511ba61de75b09fc43bebea19bbd4b676888f8",
+   "short": "86511ba",
+   "author": "Priya Natarajan",
+   "date": "2026-06-17T21:49:52Z",
+   "subject": "chore(util): add helper",
+   "files": [
+    "src/util/dates.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 10,
+   "sha": "f08f2c44c3bc9d177debcaeaa227edad8ac502a6",
+   "short": "f08f2c4",
+   "author": "Priya Natarajan",
+   "date": "2026-06-18T11:12:10Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 11,
+   "sha": "f44f811951f88fb3a386ee939e05422e15f4af1d",
+   "short": "f44f811",
+   "author": "Priya Natarajan",
+   "date": "2026-06-19T09:54:44Z",
+   "subject": "chore: add util stub",
+   "files": [
+    "src/util/assert.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 12,
+   "sha": "4e6d36652876c62c41a9c7704b7134ab21fd55ef",
+   "short": "4e6d366",
+   "author": "Priya Natarajan",
+   "date": "2026-06-20T03:26:26Z",
+   "subject": "feat(invoice): createInvoice, subtotal and summarize()",
+   "files": [
+    "src/invoice.js",
+    "test/invoice.test.js"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 13,
+   "sha": "a6f41ae63131c6792f43b541fd6b1b4daedac917",
+   "short": "a6f41ae",
+   "author": "Dev Patel",
+   "date": "2026-06-21T04:48:35Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 14,
+   "sha": "ef7bcf3cb84345978da075585cbed8902826536d",
+   "short": "ef7bcf3",
+   "author": "Marcus Chen",
+   "date": "2026-06-21T20:05:36Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 15,
+   "sha": "be5555319f768b348da42d437fd12615859c1642",
+   "short": "be55553",
+   "author": "Tomasz Nowak",
+   "date": "2026-06-22T19:03:29Z",
+   "subject": "ci: retry flaky registry fetches",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 16,
+   "sha": "7f0113d90f8f368164777bccc2c8a1709f1348e7",
+   "short": "7f0113d",
+   "author": "Marcus Chen",
+   "date": "2026-06-24T00:54:09Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/format.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 17,
+   "sha": "a4da4486f7eb9b8a545b4397d1c9db1bea93be87",
+   "short": "a4da448",
+   "author": "Dev Patel",
+   "date": "2026-06-24T07:31:31Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 18,
+   "sha": "5ff87f3ef3233f381c09433652518321a50c3ede",
+   "short": "5ff87f3",
+   "author": "Dev Patel",
+   "date": "2026-06-24T13:57:36Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 19,
+   "sha": "07329a65c20cac704025e6af3aba4459221b1090",
+   "short": "07329a6",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-24T22:35:53Z",
+   "subject": "feat(csv): export invoices to CSV with a TOTAL row per invoice",
+   "files": [
+    "src/csv.js",
+    "test/csv.test.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 20,
+   "sha": "b6afe5b09610a7e08d58ccd5f9436a5c553b115b",
+   "short": "b6afe5b",
+   "author": "Priya Natarajan",
+   "date": "2026-06-25T21:02:36Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 21,
+   "sha": "e25da05a2e7afd5559d207560fd13763302ee237",
+   "short": "e25da05",
+   "author": "Dev Patel",
+   "date": "2026-06-26T18:03:53Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 22,
+   "sha": "f2a0e5d587230eba1b1ee3e0897a09e692a8a34e",
+   "short": "f2a0e5d",
+   "author": "Priya Natarajan",
+   "date": "2026-06-27T06:33:02Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 23,
+   "sha": "98bdcfba5272b30edef96a9e721006ea918c90c5",
+   "short": "98bdcfb",
+   "author": "Tomasz Nowak",
+   "date": "2026-06-28T09:00:24Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 24,
+   "sha": "4ad4a24c4f0c5cd7d91bd72b924d36b3fc3400bb",
+   "short": "4ad4a24",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-29T11:46:51Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/format.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 25,
+   "sha": "0c8627eef9b075d68e3685f2e8526a277ed1753a",
+   "short": "0c8627e",
+   "author": "Marcus Chen",
+   "date": "2026-06-29T20:33:55Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 26,
+   "sha": "e0e81b9aacadb5f79b935e08858b7fcd6c421c28",
+   "short": "e0e81b9",
+   "author": "Marcus Chen",
+   "date": "2026-06-30T07:43:41Z",
+   "subject": "feat(money): add allocate() to split cents proportionally without losing pennies",
+   "files": [
+    "src/money.js",
+    "test/money.test.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 27,
+   "sha": "23a0a699314e0353a3f693b3188f074e47c08d46",
+   "short": "23a0a69",
+   "author": "Sofia Alvarez",
+   "date": "2026-06-30T20:28:46Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 28,
+   "sha": "27c309a27bd4039695915a4a9dd35ba3cedfd714",
+   "short": "27c309a",
+   "author": "Marcus Chen",
+   "date": "2026-07-02T02:10:56Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 29,
+   "sha": "12fca25d4270cfb2f9b2c891fd5fac15e821db14",
+   "short": "12fca25",
+   "author": "Marcus Chen",
+   "date": "2026-07-02T17:28:37Z",
+   "subject": "ci: run on node 22 too",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 30,
+   "sha": "83266f1f5a43a878262150b8823a2f33104b20ec",
+   "short": "83266f1",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-03T20:45:49Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 31,
+   "sha": "d763a54ce7f79d94e5920d6f3c9d2c8e4730b69e",
+   "short": "d763a54",
+   "author": "Marcus Chen",
+   "date": "2026-07-04T16:05:07Z",
+   "subject": "feat(invoice): invoice-level discounts allocated across lines",
+   "files": [
+    "src/csv.js",
+    "src/invoice.js",
+    "test/invoice.test.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 32,
+   "sha": "7291358e40ff1aa0d5d202eec738c951a853d2bb",
+   "short": "7291358",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-05T02:12:21Z",
+   "subject": "ci: run on node 22 too",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 33,
+   "sha": "5654793d5a38c3d31e1484a5d08d3fcf71f77098",
+   "short": "5654793",
+   "author": "Marcus Chen",
+   "date": "2026-07-05T11:56:57Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 34,
+   "sha": "86933856fa3f0d836a873ae6142aaaae3e04ceff",
+   "short": "8693385",
+   "author": "Marcus Chen",
+   "date": "2026-07-05T17:03:07Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 35,
+   "sha": "35768c163071a72a5fc5c48fc8e9b77d4cdfceb5",
+   "short": "35768c1",
+   "author": "Priya Natarajan",
+   "date": "2026-07-06T15:33:55Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/assert.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 36,
+   "sha": "f6b2974ec5314b7e86d4e4ba847a52bed41c0cbc",
+   "short": "f6b2974",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-07T18:07:25Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 37,
+   "sha": "b0a8ef6560f8ef080af75147ec9346c629a1b63c",
+   "short": "b0a8ef6",
+   "author": "Priya Natarajan",
+   "date": "2026-07-08T01:56:06Z",
+   "subject": "chore: release 1.1.0",
+   "files": [
+    "package.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 38,
+   "sha": "98f39a2a7fda00c3c3ac6c89ed0537499a62215c",
+   "short": "98f39a2",
+   "author": "Marcus Chen",
+   "date": "2026-07-08T22:01:21Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 39,
+   "sha": "581f2c086b6a9d624266fb6995217bd522c306fa",
+   "short": "581f2c0",
+   "author": "Dev Patel",
+   "date": "2026-07-09T16:12:35Z",
+   "subject": "chore: add util stub",
+   "files": [
+    "src/util/assert.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 40,
+   "sha": "2367b6bc2faf9eb71f6f8e991b86d24f7e6dbdbb",
+   "short": "2367b6b",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-10T15:32:38Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 41,
+   "sha": "b43236bcab7127164b56ad20e5cdf72fcd18cdd8",
+   "short": "b43236b",
+   "author": "Dev Patel",
+   "date": "2026-07-11T13:08:13Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 42,
+   "sha": "dfc78c1e5d9c17e075d719709cb66736005d09a5",
+   "short": "dfc78c1",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-12T09:33:32Z",
+   "subject": "feat(tax): add Manitoba (MB) to rate table",
+   "files": [
+    "src/tax.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 43,
+   "sha": "0979350f2735266a91c9bf1e1e4a635eeca69659",
+   "short": "0979350",
+   "author": "Marcus Chen",
+   "date": "2026-07-13T11:19:13Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 44,
+   "sha": "aa0a1edb9dde351bf250bc4bb9c8488652b21348",
+   "short": "aa0a1ed",
+   "author": "Dev Patel",
+   "date": "2026-07-14T02:56:23Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/format.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 45,
+   "sha": "544d3ef18acdd62482d0ae839a635fb3839d3353",
+   "short": "544d3ef",
+   "author": "Marcus Chen",
+   "date": "2026-07-14T23:12:51Z",
+   "subject": "ci: cache npm",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 46,
+   "sha": "7efed60987d390515b7fae2f5739aaf48b576c96",
+   "short": "7efed60",
+   "author": "Dev Patel",
+   "date": "2026-07-15T03:44:00Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 47,
+   "sha": "d018bccd89d63a1e7be3da1968a1acd5b2097727",
+   "short": "d018bcc",
+   "author": "Marcus Chen",
+   "date": "2026-07-16T06:35:58Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 48,
+   "sha": "765586ba58331078839866d10d40fefde9813920",
+   "short": "765586b",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-16T14:13:02Z",
+   "subject": "feat(invoice): support credit notes",
+   "files": [
+    "src/invoice.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 49,
+   "sha": "bc50ce022fb19e57151f46502a5ca891e9b187dd",
+   "short": "bc50ce0",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-16T19:27:24Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 50,
+   "sha": "0718e8597304fa35708753fd24fe8e4d5e9b68da",
+   "short": "0718e85",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-17T20:05:22Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 51,
+   "sha": "ca6e2ac1aa4414d28b2693c70c73ff0acbca8491",
+   "short": "ca6e2ac",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-18T13:33:09Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 52,
+   "sha": "65f1e4b3c84c1d0134b5f56c5c9084e8e0e0f035",
+   "short": "65f1e4b",
+   "author": "Marcus Chen",
+   "date": "2026-07-19T02:10:57Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 53,
+   "sha": "ec01c090516e4307a14874a5312213ee1bb03423",
+   "short": "ec01c09",
+   "author": "Priya Natarajan",
+   "date": "2026-07-19T19:58:37Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 54,
+   "sha": "47545c40e8e5e832fc7152de4fba5611ef57a9a1",
+   "short": "47545c4",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-20T00:04:29Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 55,
+   "sha": "f398b5742dff9b4e30aa7799e2a7f759044794c5",
+   "short": "f398b57",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-20T17:08:20Z",
+   "subject": "fix(tax): symmetric rounding for negative (credit note) amounts",
+   "files": [
+    "src/tax.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 56,
+   "sha": "8eeac7ced5dcb8fd167c2e2d532298f93a297318",
+   "short": "8eeac7c",
+   "author": "Marcus Chen",
+   "date": "2026-07-20T23:42:27Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 57,
+   "sha": "13e24c628fc52c498de7777654027a478d07341a",
+   "short": "13e24c6",
+   "author": "Dev Patel",
+   "date": "2026-07-21T09:40:48Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 58,
+   "sha": "3055d27ce7c95a54f78f438a5371126d69c8c6f5",
+   "short": "3055d27",
+   "author": "Dev Patel",
+   "date": "2026-07-22T09:10:58Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 59,
+   "sha": "345f0f661aaa39efef6a9262b704c8931602baff",
+   "short": "345f0f6",
+   "author": "Marcus Chen",
+   "date": "2026-07-23T02:53:10Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 60,
+   "sha": "0f49f9747bd50f633899c3fa14bb4b0726f9202a",
+   "short": "0f49f97",
+   "author": "Priya Natarajan",
+   "date": "2026-07-24T00:21:43Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 61,
+   "sha": "e1cae3d74584b252e4386e6d3c42fc8a4025b731",
+   "short": "e1cae3d",
+   "author": "Dev Patel",
+   "date": "2026-07-24T14:40:40Z",
+   "subject": "docs(money): document allocate() and toCents()",
+   "files": [
+    "src/money.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 62,
+   "sha": "cc638f8cb0f64de5371474c8c90013010bd523f6",
+   "short": "cc638f8",
+   "author": "Dev Patel",
+   "date": "2026-07-25T03:27:41Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 63,
+   "sha": "4a698f4150cf111a8a5923d4cf08ae875fefd4f1",
+   "short": "4a698f4",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-26T08:12:58Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 64,
+   "sha": "7bf40f4ae7b992e3a3a2418c5ed12a3df594dd6f",
+   "short": "7bf40f4",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-27T02:59:53Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 65,
+   "sha": "9598cc998e2e917d4db511408834b8b2f3e181e3",
+   "short": "9598cc9",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-28T02:30:16Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 66,
+   "sha": "c0cfaaf2f3bf518f58c400823f6b779fe2c7d51d",
+   "short": "c0cfaaf",
+   "author": "Sofia Alvarez",
+   "date": "2026-07-29T07:38:45Z",
+   "subject": "perf(csv): build rows in an array and join once",
+   "files": [
+    "src/csv.js"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 67,
+   "sha": "7c4c90c05dacb06e4dc1c8c0296ae4e9a0b7fa88",
+   "short": "7c4c90c",
+   "author": "Tomasz Nowak",
+   "date": "2026-07-30T13:14:17Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 68,
+   "sha": "fe96724ed3df193d52f803e113e9bc303b37a5e3",
+   "short": "fe96724",
+   "author": "Marcus Chen",
+   "date": "2026-07-31T10:36:14Z",
+   "subject": "chore: add util stub",
+   "files": [
+    "src/util/format.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 69,
+   "sha": "afec711c0a640465ae65ab0b1a8794ca4db50814",
+   "short": "afec711",
+   "author": "Dev Patel",
+   "date": "2026-08-01T13:28:50Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 70,
+   "sha": "e1d8cb1cd3f4ce87bbb18e2f9d9f35294ae55a95",
+   "short": "e1d8cb1",
+   "author": "Marcus Chen",
+   "date": "2026-08-02T09:32:42Z",
+   "subject": "chore(util): add helper",
+   "files": [
+    "src/util/ids.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 71,
+   "sha": "f4826837805a15e7fca069a10bdb9f33d1375d33",
+   "short": "f482683",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-03T14:32:33Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 72,
+   "sha": "f0f4620948771268ffd958b074b0be0130547c27",
+   "short": "f0f4620",
+   "author": "Dev Patel",
+   "date": "2026-08-04T13:44:18Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 73,
+   "sha": "3fed8192178b81c6cfc10706ed3c90a55ca6bd0f",
+   "short": "3fed819",
+   "author": "Sofia Alvarez",
+   "date": "2026-08-05T17:12:17Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 74,
+   "sha": "016997fb8d38800e73c503051fbfa09d68d2da25",
+   "short": "016997f",
+   "author": "Priya Natarajan",
+   "date": "2026-08-06T20:25:42Z",
+   "subject": "chore: release 1.2.0",
+   "files": [
+    "package.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 75,
+   "sha": "5ad96c0d7217a83bad484339a3bd467d0383415d",
+   "short": "5ad96c0",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-07T17:59:06Z",
+   "subject": "ci: bump actions/checkout",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 76,
+   "sha": "be04602c01bddda00f5fbe3e555f17892e1d6d26",
+   "short": "be04602",
+   "author": "Priya Natarajan",
+   "date": "2026-08-08T11:26:58Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 77,
+   "sha": "16acfce6cf5e2f827c7403e883e5b0fe410522fe",
+   "short": "16acfce",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-09T01:12:32Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 78,
+   "sha": "3ded6b8684ca466cdf071eecef0cb424647cef94",
+   "short": "3ded6b8",
+   "author": "Marcus Chen",
+   "date": "2026-08-09T07:24:44Z",
+   "subject": "docs: update changelog",
+   "files": [
+    "CHANGELOG.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 79,
+   "sha": "048ae517ed7ad486592ec6474895ebda41a1b121",
+   "short": "048ae51",
+   "author": "Marcus Chen",
+   "date": "2026-08-10T09:40:12Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 80,
+   "sha": "cd81eddff9af5cd5251036ef0942971da130364b",
+   "short": "cd81edd",
+   "author": "Marcus Chen",
+   "date": "2026-08-10T16:15:52Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 81,
+   "sha": "4c58cb393392d857286ffa693bb1489f048f7212",
+   "short": "4c58cb3",
+   "author": "Dev Patel",
+   "date": "2026-08-11T03:01:40Z",
+   "subject": "refactor(money): simplify allocate() remainder distribution",
+   "files": [
+    "src/money.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 82,
+   "sha": "72cb3662392ae86fbe53619eb947d84a5f58ab70",
+   "short": "72cb366",
+   "author": "Priya Natarajan",
+   "date": "2026-08-12T01:45:34Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 83,
+   "sha": "24b8af764cb7aafb990abe2b51b05770cb69267e",
+   "short": "24b8af7",
+   "author": "Priya Natarajan",
+   "date": "2026-08-13T02:05:24Z",
+   "subject": "docs(tax): note provincial quirks",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 84,
+   "sha": "f9ae05c2ec41be86e6bd4e10cb2751274a0e2183",
+   "short": "f9ae05c",
+   "author": "Dev Patel",
+   "date": "2026-08-13T06:57:07Z",
+   "subject": "ci: cache npm",
+   "files": [
+    ".github/workflows/ci.yml"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 85,
+   "sha": "0e49f0f8c17b33a3ee88802f0779088799490927",
+   "short": "0e49f0f",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-14T02:03:48Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 86,
+   "sha": "249585af4a91ae34c157c89d42db21570d23ef7c",
+   "short": "249585a",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-14T06:53:51Z",
+   "subject": "feat(report): monthly summary of issued invoices",
+   "files": [
+    "src/report.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 87,
+   "sha": "59d78a82d37962455fb696718558ed3282eacf52",
+   "short": "59d78a8",
+   "author": "Marcus Chen",
+   "date": "2026-08-15T05:59:59Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 88,
+   "sha": "db3221412ec601b919f846b6d5c33c678d2c92b6",
+   "short": "db32214",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-16T06:25:21Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 89,
+   "sha": "a503514bf8b10949007691d84d13815c664e596d",
+   "short": "a503514",
+   "author": "Dev Patel",
+   "date": "2026-08-16T21:38:41Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/dates.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 90,
+   "sha": "de06433c16d010867c8f4bb49fb56537e6468adc",
+   "short": "de06433",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-17T06:12:20Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 91,
+   "sha": "fbae5db2a2d73d07e25751b99c9c02a1de8cc329",
+   "short": "fbae5db",
+   "author": "Sofia Alvarez",
+   "date": "2026-08-17T16:28:46Z",
+   "subject": "fix(csv): quote fields containing commas, quotes or newlines",
+   "files": [
+    "src/csv.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 92,
+   "sha": "7f2cf4040e23b7e90c5bd08426d00e7140620757",
+   "short": "7f2cf40",
+   "author": "Marcus Chen",
+   "date": "2026-08-17T23:59:22Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 93,
+   "sha": "f858542a210a2180bfc97f65b68718d1f2933db8",
+   "short": "f858542",
+   "author": "Dev Patel",
+   "date": "2026-08-19T03:57:44Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 94,
+   "sha": "15ec0645feeaf534de3a7cfdd64561aba46f4376",
+   "short": "15ec064",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-19T23:03:06Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 95,
+   "sha": "44b0a02e4dfc92c2f3496d6ff99f20d9e8567c72",
+   "short": "44b0a02",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-20T09:34:43Z",
+   "subject": "chore(util): add helper",
+   "files": [
+    "src/util/assert.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 96,
+   "sha": "82b3ef5acff1f99bfb52b92137a512ef40347418",
+   "short": "82b3ef5",
+   "author": "Dev Patel",
+   "date": "2026-08-21T02:46:26Z",
+   "subject": "docs(readme): expand usage notes",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 97,
+   "sha": "af24e3e3ebbb5db8801bdbd0047c46dbbeabf9ac",
+   "short": "af24e3e",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-21T12:16:38Z",
+   "subject": "feat(report): group monthly summary by province",
+   "files": [
+    "src/report.js"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 98,
+   "sha": "6d6811097ad1a689cc231d031c1a5f859b579760",
+   "short": "6d68110",
+   "author": "Tomasz Nowak",
+   "date": "2026-08-22T04:32:18Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 99,
+   "sha": "f704a22b7458cdd06fcd10b002d6a6fcde78cc4f",
+   "short": "f704a22",
+   "author": "Marcus Chen",
+   "date": "2026-08-22T12:39:21Z",
+   "subject": "refactor(util): extract helper",
+   "files": [
+    "src/util/assert.js"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 100,
+   "sha": "8ab5f1939e4d574400b2d8e5b2e60834bafb9b9d",
+   "short": "8ab5f19",
+   "author": "Sofia Alvarez",
+   "date": "2026-08-23T06:07:35Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 101,
+   "sha": "284af14068ba7f2ba968cd2d6c0adc797abd527f",
+   "short": "284af14",
+   "author": "Marcus Chen",
+   "date": "2026-08-23T16:41:00Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "failed"
+  },
+  {
+   "index": 102,
+   "sha": "438b0ed083b720466aafb58e5a5d5fcf104bfdd9",
+   "short": "438b0ed",
+   "author": "Priya Natarajan",
+   "date": "2026-08-24T07:45:36Z",
+   "subject": "docs: fix typo in README",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 103,
+   "sha": "0a48c5817ddfbb20ae136fcce3d5520866215e27",
+   "short": "0a48c58",
+   "author": "Dev Patel",
+   "date": "2026-08-25T11:11:24Z",
+   "subject": "docs(architecture): add notes",
+   "files": [
+    "docs/architecture.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 104,
+   "sha": "abb03147c14236201dcce71698e647ed01ea64a2",
+   "short": "abb0314",
+   "author": "Priya Natarajan",
+   "date": "2026-08-25T16:35:15Z",
+   "subject": "chore: release 1.3.0",
+   "files": [
+    "package.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 105,
+   "sha": "ac4a2f0d908809e1bae808c50ea3b8037f03e843",
+   "short": "ac4a2f0",
+   "author": "Sofia Alvarez",
+   "date": "2026-08-26T11:50:28Z",
+   "subject": "test: add customer fixture",
+   "files": [
+    "fixtures/customers.json"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 106,
+   "sha": "04a31ccf70ba59edb8503436e410284150389179",
+   "short": "04a31cc",
+   "author": "Priya Natarajan",
+   "date": "2026-08-27T03:33:19Z",
+   "subject": "docs(tax): verify against CRA",
+   "files": [
+    "docs/tax-notes.md"
+   ],
+   "ci": "passed"
+  },
+  {
+   "index": 107,
+   "sha": "0cf19ba3b6464d7998cfa664b22b205bdc2cc598",
+   "short": "0cf19ba",
+   "author": "Marcus Chen",
+   "date": "2026-08-28T01:31:26Z",
+   "subject": "docs: clarify cents convention",
+   "files": [
+    "README.md"
+   ],
+   "ci": "passed"
+  }
+ ],
+ "landmarks": {
+  "culprit": 81,
+  "redHerring": 55,
+  "creditNotes": 48,
+  "discounts": 31,
+  "allocate": 26,
+  "csvPerf": 66,
+  "moneyDocs": 61,
+  "report": 86,
+  "csvQuoting": 91
+ },
+ "culpritDiff": "diff --git a/src/money.js b/src/money.js\nindex 325df72..5e51904 100644\n--- a/src/money.js\n+++ b/src/money.js\n@@ -22,8 +22,7 @@ export function sumCents(list) {\n export function allocate(totalCents, weights) {\n   const sum = weights.reduce((a, b) => a + b, 0);\n   if (sum === 0) return weights.map(() => 0);\n-  const shares = weights.map((w) => Math.floor((totalCents * w) / sum));\n-  // floor() always rounds toward -Infinity, so the remainder is >= 0 for any sign of total\n+  const shares = weights.map((w) => Math.trunc((totalCents * w) / sum));\n   let remainder = totalCents - shares.reduce((a, b) => a + b, 0);\n   for (let i = 0; remainder > 0; i = (i + 1) % shares.length) {\n     shares[i] += 1;\n",
+ "culpritBody": "Use Math.trunc for the initial shares (reads clearer than floor for our positive-cents use case) and drop the sign comment. No behaviour change intended; tests green."
+}

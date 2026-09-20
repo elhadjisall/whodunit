@@ -16,17 +16,34 @@
     "demo:generate": "tsx src/cli.ts demo generate",
     "demo:index": "tsx src/cli.ts index --repo /tmp/whodunit-demo/acme-ledger"
   },
-  "keywords": ["git", "bisect", "elasticsearch", "agent", "debugging", "developer-tools"],
+  "keywords": [
+    "git",
+    "bisect",
+    "elasticsearch",
+    "agent",
+    "debugging",
+    "developer-tools"
+  ],
   "license": "MIT",
   "dependencies": {
     "@elastic/elasticsearch": "^9.4.3",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
-    "openai": "^6.49.0"
+    "framer-motion": "^12.43.0",
+    "lucide-react": "^1.47.0",
+    "openai": "^6.49.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^6.4.3"
   }
 }
