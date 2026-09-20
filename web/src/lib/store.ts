@@ -1,5 +1,5 @@
 /* Reduces the case event stream (live or simulated) into UI state. */
-import type { AmendsResult, AwaitingPayload, CaseEvent, CulpritPayload, Evidence, Mode, PriorPayload, ProbePayload, PublicCommit, Suspect, TargetingPayload } from "../types";
+import type { AmendsResult, AwaitingPayload, CaseEvent, CulpritPayload, Evidence, Mode, PriorPayload, ProbePayload, PublicCommit, SpanPayload, Suspect, TargetingPayload } from "../types";
 
 export type LogKind = "sys" | "tool" | "esql" | "ok" | "warn" | "err" | "agent" | "probe" | "stamp" | "dim";
 
@@ -62,6 +62,8 @@ export interface CaseState {
   /** sha -> which retrievers surfaced it */
   via: Record<string, string[]>;
   seq: number;
+  /** ES kNN vs Gemini vs oracle latency */
+  spans: SpanPayload[];
 }
 
 export const initialState = (mode: Mode = "auto", eps = 0.05, flaky = false): CaseState => ({
@@ -81,6 +83,7 @@ export const initialState = (mode: Mode = "auto", eps = 0.05, flaky = false): Ca
   similarity: {},
   via: {},
   seq: 0,
+  spans: [],
 });
 
 export type Action =
@@ -123,6 +126,11 @@ export function renderTool(name: string, args: Record<string, unknown>, repo = "
           `           "k": 40, "num_candidates": 200, "filter": { "term": { "repo": "${repo}" } } } }`,
           `→ fuse: score = Σ 1 / (60 + rank)          # Reciprocal Rank Fusion, k=60`,
           `→ rerank: jina-reranker-v2 (if JINA_API_KEY)`,
+          `FROM wd-hunks, wd-commits, wd-issues`,
+          `| WHERE repo == "${repo}" AND author != "bot"`,
+          `| EVAL suspicion_score = bm25() + knn(embedding, 768)`,
+          `| SORT suspicion_score DESC`,
+          `| LIMIT 12`,
         ],
       };
     case "file_timeline":
@@ -155,6 +163,19 @@ export function renderTool(name: string, args: Record<string, unknown>, repo = "
           `| EVAL week = DATE_TRUNC(1 week, date)`,
           `| STATS runs = COUNT(*), failed = COUNT(*) WHERE status == "failed", p50_ms = PERCENTILE(duration_ms, 50) BY week`,
           `| SORT week ASC`,
+        ],
+      };
+    case "file_suspicion":
+      return {
+        legs: ["esql"],
+        query: [
+          `POST /_query   # ES|QL — file-level suspicion`,
+          `FROM wd-hunks`,
+          `| WHERE repo == "${repo}" AND file LIKE "src/*"`,
+          `| STATS hunks = COUNT(*), commits = COUNT_DISTINCT(sha) BY file`,
+          `| EVAL suspicion_score = hunks * 1.0 + commits * 0.5`,
+          `| SORT suspicion_score DESC`,
+          `| LIMIT 8`,
         ],
       };
     case "show_commit":
@@ -229,7 +250,9 @@ export function reduce(prev: CaseState, action: Action): CaseState {
             ? `file_timeline ${a.file}`
             : event.payload.name === "show_commit"
               ? `show_commit ${short(a.sha)}`
-              : event.payload.name;
+            : event.payload.name === "file_suspicion"
+            ? `ES|QL file_suspicion src/*`
+            : event.payload.name;
       push(r.legs.includes("esql") ? "esql" : "tool", `ES ▸ ${summary}`);
       break;
     }
@@ -343,6 +366,14 @@ export function reduce(prev: CaseState, action: Action): CaseState {
     case "note":
       push(event.payload.level === "warn" ? "warn" : "sys", event.payload.text);
       break;
+    case "span": {
+      state.spans = [...state.spans, event.payload].slice(-80);
+      const a = event.payload;
+      const tag = a.op.startsWith("db.") ? "esql" : a.op.startsWith("gen_ai") ? "agent" : a.op.startsWith("test") ? "probe" : "dim";
+      const who = a.op.startsWith("db.") || a.name.startsWith("elasticsearch") ? "ES" : a.op.startsWith("gen_ai") || a.name.startsWith("gemini") ? "GEMINI" : "TIMING";
+      push(tag, `${who} ▸ ${a.name}  ${a.durationMs}ms${a.attrs?.["candidates.count"] != null ? ` · ${a.attrs["candidates.count"]} hits` : ""}${a.attrs?.["gen_ai.usage.input_tokens"] != null ? ` · ${a.attrs["gen_ai.usage.input_tokens"]}→${a.attrs["gen_ai.usage.output_tokens"]} tok` : ""}`);
+      break;
+    }
     case "error":
       state.error = event.payload.message;
       if (!state.culprit) state.status = "error";

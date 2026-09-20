@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { credibleSet, entropyBits, initState, makePrior, mostLikely, nextProbe, pBad, update, uniformProbes, type BisectState } from "./bayes.js";
+import { credibleSet, entropyBits, initState, makePrior, mostLikely, nextProbe, pBad, simulateGitBisect, update, uniformProbes, type BisectState } from "./bayes.js";
 import { config } from "./config.js";
 import { bulkIndex, INDEX } from "./es/client.js";
 import { listCiStatus, listCommits } from "./es/search.js";
@@ -13,6 +13,7 @@ import { makeAmends, type AmendsResult } from "./agent/amends.js";
 import { hasLLM, llmLabel, onLlmRetry } from "./agent/llm.js";
 import { ui } from "./ui.js";
 import { publicCommit, type CaseEmitter, type ChooseProbe } from "./events.js";
+import { captureException, captureFlakyOracle, count, logInfo, onSpan, span } from "./obs.js";
 
 export interface SolveOptions {
   repoPath: string;
@@ -68,11 +69,16 @@ function boardOf(pub: Pub, commits: CommitInfo[], posterior: number[], probed: M
 }
 
 export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
+  return span("whodunit.solve_case", "agent.case", { "query.length": opts.description.length }, (set) => solveCaseInner(opts, set));
+}
+
+async function solveCaseInner(opts: SolveOptions, setCase: (k: string, v: string | number | boolean | undefined) => void): Promise<CaseResult> {
   const repo = await repoName(opts.repoPath);
   const caseId = crypto.randomBytes(3).toString("hex");
   const caseDir = path.join(config.homeDir, "cases", caseId);
   await fs.mkdir(caseDir, { recursive: true });
   const emit: CaseEmitter = (e) => opts.onEvent?.(e);
+  onSpan((s) => emit({ type: "span", payload: s }));
   // Surface rate-limit backoff in the UI (and CLI) instead of stalling silently.
   onLlmRetry((text) => {
     ui.warn(text);
@@ -103,6 +109,10 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   const ciBySha = await listCiStatus(repo);
   const pub: Pub = (c, extra = {}) => publicCommit(c, { ci: ciBySha.get(c.sha), ...extra });
   ui.kv("range", `${oldest.short}..${newest.short} (${n} commits, ${oldest.date.slice(0, 10)} → ${newest.date.slice(0, 10)})`);
+  setCase("case.id", caseId);
+  setCase("repo", repo);
+  setCase("commit.count", n);
+  logInfo("case.opened", { caseId, repo, commits: n });
   emit({
     type: "opened",
     payload: {
@@ -122,11 +132,13 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   /* 1. Investigate ------------------------------------------------------ */
   ui.section("1 · INVESTIGATION");
   emit({ type: "phase", payload: { phase: "investigate", title: "Dusting the case file" } });
-  const investigation = await investigate(repo, opts.description, {
-    verbose: opts.verbose,
-    onToolCall: (name, args) => emit({ type: "tool", payload: { name, args } }),
-    onEvidence: (items) => emit({ type: "evidence", payload: { items: items.slice(0, 18) } }),
-  });
+  const investigation = await span("gemini.agent_investigation", "gen_ai.agent", { "gen_ai.system": "gemini", "gen_ai.operation.name": "investigate" }, () =>
+    investigate(repo, opts.description, {
+      verbose: opts.verbose,
+      onToolCall: (name, args) => emit({ type: "tool", payload: { name, args } }),
+      onEvidence: (items) => emit({ type: "evidence", payload: { items: items.slice(0, 18) } }),
+    }),
+  );
   console.log(`  ${ui.dim(`${investigation.queries.length} searches · ${investigation.evidence.length} pieces of evidence`)}`);
   if (investigation.notes) console.log(`\n  ${ui.bold("Theory:")} ${investigation.notes.trim().replace(/\n+/g, " ")}\n`);
   ui.evidence(investigation.evidence, 6);
@@ -235,12 +247,16 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       const c = commits[k];
       const pb = pBad(state, k);
       emit({ type: "targeting", payload: { step, index: k, commit: pub(c), pBad: pb, by } });
-      const r = await runAt(pool, c.sha, test.command, { setup: opts.setup, timeoutMs: opts.timeoutMs });
+      const r = await span("whodunit.oracle", "test.oracle", { "git.sha": c.short, step, by }, () =>
+        runAt(pool, c.sha, test.command, { setup: opts.setup, timeoutMs: opts.timeoutMs }),
+      );
       const truth: "good" | "bad" = r.exitCode === 0 ? "good" : "bad";
       // Simulated flaky oracle (demo): sometimes the test lies. The Bayesian update treats every
       // observation as noisy (eps), so a lie costs a probe or two instead of derailing the search.
       const flaked = noise > 0 && Math.random() < noise;
       const result: "good" | "bad" = flaked ? (truth === "good" ? "bad" : "good") : truth;
+      if (flaked) captureFlakyOracle(c.sha, { truth, observed: result, step });
+      count("whodunit.probe", 1, { result, by, flaked });
       cache.set(k, result);
       update(state, k, result, r.durationMs);
       ui.probeLine(step, k, c.short, c.subject, result, pb, r.durationMs);
@@ -307,6 +323,16 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     const { index: culpritIdx, p: conf } = mostLikely(state);
     const culprit = commits[culpritIdx];
     const uniformSteps = simulateUniformBisect(n, culpritIdx);
+    const gitRun = simulateGitBisect(n, (k) => {
+      const seen = cache.get(k);
+      if (seen) return seen;
+      return k >= culpritIdx ? "bad" : "good";
+    });
+    setCase("culprit.sha", culprit.short);
+    setCase("culprit.probes", step);
+    setCase("git_bisect.steps", uniformSteps);
+    setCase("git_bisect.verdict", gitRun.verdict);
+    logInfo("culprit.identified", { sha: culprit.short, probes: step, uniformSteps, confidence: Number(conf.toFixed(3)) });
     console.log();
     ui.posterior(state, (i) => `${commits[i].short} ${commits[i].subject}`, { highlight: culpritIdx, maxRows: 8 });
     console.log();
@@ -315,7 +341,14 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     );
     emit({
       type: "culprit",
-      payload: { commit: pub(culprit, { p: 1, mass: conf, probed: "bad" }), confidence: conf, probes: step, uniformSteps },
+      payload: {
+        commit: pub(culprit, { p: 1, mass: conf, probed: "bad" }),
+        confidence: conf,
+        probes: step,
+        uniformSteps,
+        gitVerdict: gitRun.verdict,
+        gitSteps: gitRun.steps,
+      },
     });
 
     /* 4. Verdict ---------------------------------------------------- */
@@ -381,6 +414,26 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       caseFile,
       renderCaseFile({ caseId, repo, description: opts.description, commits, state, culprit, investigation, test, verdict, amends, uniformSteps, priorBits }),
     );
+    await fs.writeFile(
+      path.join(caseDir, "case.json"),
+      JSON.stringify(
+        {
+          caseId,
+          repo,
+          repoPath: opts.repoPath,
+          description: opts.description,
+          culprit: { sha: culprit.sha, short: culprit.short, index: culpritIdx, subject: culprit.subject, files: culprit.files, author: culprit.author, date: culprit.date },
+          verdict,
+          reproCommand: test.command,
+          reproOutput: reproOutputAtHead.slice(0, 8000),
+          probes: step,
+          uniformSteps,
+          confidence: conf,
+        },
+        null,
+        2,
+      ),
+    );
     await bulkIndex(
       INDEX.cases,
       [
@@ -404,7 +457,11 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     emit({ type: "closed", payload: { caseId, caseFile } });
 
     return { caseId, culprit, state, investigation, test, verdict, amends, uniformSteps, caseFile };
+  } catch (e) {
+    captureException(e, { "case.id": caseId, phase: "solve" });
+    throw e;
   } finally {
+    onSpan(null);
     await pool.cleanup();
   }
 }

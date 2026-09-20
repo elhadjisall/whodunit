@@ -1,6 +1,59 @@
 # whodunit
 
-**`git bisect` with a brain.** Tell it what broke in plain English. It searches your repo's messy history — diffs, commit messages, noisy CI logs, issue threads — in Elasticsearch, writes a reproduction, and runs a **Bayesian bisection** that finds the culprit commit in a fraction of the test runs `git bisect` needs. Then it explains the bug with citations and commits a verified fix on a branch.
+Tell it what broke. It searches git history in Elasticsearch, writes a test, and finds the culprit commit with a Bayesian bisect — usually in fewer runs than `git bisect`. Then Gemini writes a cited verdict and can commit a fix.
+
+## How to run
+
+```bash
+npm install
+cp .env.example .env
+```
+
+Put these in `.env`:
+
+- `ELASTICSEARCH_URL` and `ELASTICSEARCH_API_KEY` (Elastic Cloud Serverless is fine)
+- `GEMINI_API_KEY`
+
+Then:
+
+```bash
+npm run play
+```
+
+Open **http://127.0.0.1:3333** (fullscreen, or a 1512×945 window).
+
+| Button | What it does |
+|---|---|
+| **Run demo case (simulated)** | 30-second pitch. No live API calls. Use this in front of judges. |
+| **Release the hounds** | Live Elasticsearch + Gemini on the same case. |
+
+First run generates and indexes the demo repo (`acme-ledger`, 108 commits) if needed.
+
+If Elasticsearch is down, the UI still works in simulation mode.
+
+```bash
+npm run demo:offline    # force simulation
+npx whodunit doctor     # check ES + Gemini
+```
+
+### CLI (same engine, no UI)
+
+```bash
+npx whodunit demo generate
+npx whodunit index --repo /tmp/whodunit-demo/acme-ledger
+npx whodunit solve --repo /tmp/whodunit-demo/acme-ledger \
+  "Credit notes with a discount export to CSV with a TOTAL that is a cent off from the invoice total." \
+  --fix --verify "npm test"
+```
+
+No Gemini key? Pass your own test:
+
+```bash
+npx whodunit solve --repo /tmp/whodunit-demo/acme-ledger "credit note csv total off by a cent" \
+  --test "bash /tmp/whodunit-demo/repro-credit-note.sh"
+```
+
+---
 
 ```
 $ whodunit solve --repo . "Credit notes with a discount export to CSV with a TOTAL that is a cent off from the invoice total." --fix
@@ -92,23 +145,11 @@ When the culprit is bracketed, **THE DAILY COMMIT — EXTRA** spins onto the scr
 
 Stack: React 19, Tailwind 4, Framer Motion, Lucide, Vite; events stream from the Node server over SSE (`/api/play`, `/api/stream/:id`, `/api/probe/:id`, `/api/fix/:id`). `npm run dev:web` gives a hot-reloading UI proxied to the bureau on 3333.
 
-## Quickstart
-
-Requirements: Node ≥ 20, git, Java is bundled with Elasticsearch (no Docker needed).
+## Quickstart (local Elasticsearch instead of Cloud)
 
 ```bash
-npm install
-cp .env.example .env             # ELASTICSEARCH_URL(+API key, Elastic Cloud Serverless works) and GEMINI_API_KEY
-npm run demo                     # generates + indexes the crime scene, builds the UI, opens the Interrogation Room
-```
-
-Piece by piece:
-
-```bash
-npm run es:start                 # downloads + runs a local single-node Elasticsearch 9.x (~/.whodunit) — or point .env at Elastic Cloud
-export GEMINI_API_KEY=...        # the brain (Gemini 3.6 Flash; falls back to 3.5 Flash → 3 Flash → 2.5 Flash when a free-tier quota runs dry)
-npx whodunit doctor
-npx whodunit play                # the game at http://127.0.0.1:3333 (generates + indexes the demo repo on first run)
+npm run es:start          # downloads Elasticsearch 9.x into ~/.whodunit
+npx whodunit play
 ```
 
 ### The demo crime scene
@@ -155,9 +196,8 @@ npx whodunit solve --repo ~/code/my-service "POST /export returns 500 for CSVs o
 
 ## Hack the North tracks
 
-- **Elastic — Find the Signal.** Messy, unstructured inputs (diffs, ANSI-laden CI logs, issue threads) become an agent's context layer: hybrid BM25 + dense vectors + RRF + reranking, `word_delimiter_graph` code analyzer, terms/date-histogram aggregations, ES|QL for time-series, and an agent whose tools *are* Elasticsearch queries — and that closes the loop by committing a fix instead of answering a question.
-- **Warp — Best Developer Tool.** A CLI for the debugging part of the lifecycle that replaces the most tedious ritual in git with something that reads the evidence first; the terminal output *is* the UX (live posterior histogram, probe log with "surprise!" markers, case files). The Interrogation Room is the same engine with the math made visible: every Elasticsearch call on the radar, every probe on the timeline, git bisect's needle next to whodunit's.
-- **Gemini.** Three specialised agents (investigator, reproduction specialist, fixer) on tool calling with thought signatures preserved across turns. Default brain is Gemini 3.6 Flash with a quota-aware fallback chain.
+- **Elastic.** Hybrid BM25 + Gemini 768-d kNN + RRF over commits, diff hunks, CI logs and issues. Aggregations and ES|QL (`ci_timeline`, `file_suspicion`). The agent's tools are Elasticsearch queries.
+- **Gemini.** Investigator, reproduction specialist, and fixer on tool calling. Embeddings for hybrid search. Quota fallback across Flash models.
 
 ## Limitations
 

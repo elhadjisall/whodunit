@@ -89,7 +89,10 @@ function Radar({ state }: { state: CaseState }) {
       <div ref={ref} className="min-h-0 flex-1 overflow-auto p-2 font-mono text-[10px] leading-[1.45]">
         {state.radar.length === 0 && (
           <div className="crt-dim">
-            <div>whodunit radar v0.1 · elasticsearch serverless · indices wd-commits wd-hunks wd-logs wd-issues</div>
+            <div>whodunit radar · elasticsearch serverless</div>
+            <div>indices  wd-commits  wd-hunks  wd-logs  wd-issues</div>
+            <div>hybrid   BM25 + kNN(768d Gemini) → RRF k=60</div>
+            <div>esql     FROM wd-logs | STATS failed BY week</div>
             <div>awaiting complaint<span className="cursor-blink" /></div>
           </div>
         )}
@@ -187,7 +190,7 @@ function Dispatch({ state }: { state: CaseState }) {
         {state.log.length === 0 && (
           <div className="crt-dim">
             <div>[--:--:--] dispatch idle. static.</div>
-            <div>[--:--:--] units on standby: investigator · reproduction · fixer</div>
+            <div>[--:--:--] units on standby: investigator · reproduction specialist · fixer (Gemini)</div>
           </div>
         )}
         <AnimatePresence initial={false}>
@@ -227,7 +230,7 @@ export function TerminalDeck({ state, setHover }: { state: CaseState; setHover: 
         <header className="relative z-10 flex items-center gap-2 border-b border-phosphor/20 px-2 py-1 font-mono text-[10px]">
           <RadioTower size={12} />
           <span className="font-semibold tracking-[0.2em]">RADIO DISPATCH</span>
-          <span className="crt-dim">agent reasoning · oracle synthesis · test runner</span>
+          <span className="crt-dim">investigator · reproduction specialist · fixer · Gemini tool loop</span>
           <ScrollText size={12} className="ml-auto crt-dim" />
         </header>
         <div className="relative z-10 min-h-0 flex-1">

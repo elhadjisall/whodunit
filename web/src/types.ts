@@ -109,6 +109,13 @@ export interface TargetingPayload {
   by: "detective" | "player";
 }
 
+export interface SpanPayload {
+  name: string;
+  op: string;
+  durationMs: number;
+  attrs?: Record<string, string | number | boolean | undefined>;
+}
+
 export type CaseEvent =
   | { type: "opened"; payload: OpenedPayload }
   | { type: "phase"; payload: { phase: string; title: string } }
@@ -127,6 +134,7 @@ export type CaseEvent =
   | { type: "amends"; payload: AmendsResult }
   | { type: "closed"; payload: { caseId: string; caseFile: string } }
   | { type: "note"; payload: { level: "info" | "warn"; text: string } }
+  | { type: "span"; payload: SpanPayload }
   | { type: "error"; payload: { message: string } };
 
 export type EventType = CaseEvent["type"];
@@ -149,6 +157,7 @@ export const EVENT_TYPES: EventType[] = [
   "amends",
   "closed",
   "note",
+  "span",
   "error",
 ];
 

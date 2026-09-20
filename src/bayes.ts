@@ -117,6 +117,20 @@ export function mostLikely(state: BisectState): { index: number; p: number } {
   return { index: idx, p: state.posterior[idx] };
 }
 
+/** Classic git bisect (midpoint on [1, n-1]) against an oracle — used to show when flakiness derails it. */
+export function simulateGitBisect(n: number, oracle: (k: number) => ProbeResult): { steps: number[]; verdict: number } {
+  let lo = 1;
+  let hi = n - 1;
+  const steps: number[] = [];
+  while (hi > lo) {
+    const mid = Math.floor((lo + hi) / 2);
+    steps.push(mid);
+    if (oracle(mid) === "bad") hi = mid;
+    else lo = mid + 1;
+  }
+  return { steps, verdict: hi };
+}
+
 /** Smallest set of commits covering `mass` of the posterior (for reporting "the suspects"). */
 export function credibleSet(state: BisectState, mass = 0.9): number[] {
   const order = state.posterior.map((p, i) => [p, i] as const).sort((a, b) => b[0] - a[0]);

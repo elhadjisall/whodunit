@@ -49,12 +49,14 @@ export type CaseEvent =
   | { type: "targeting"; payload: { step: number; index: number; commit: PublicCommit; pBad: number; by: "detective" | "player" } }
   | { type: "probe"; payload: { step: number; index: number; commit: PublicCommit; result: "good" | "bad"; pBad: number; durationMs: number; by: "detective" | "player"; flaked?: boolean } }
   | { type: "posterior"; payload: { board: PublicCommit[]; highlight?: number } }
-  | { type: "culprit"; payload: { commit: PublicCommit; confidence: number; probes: number; uniformSteps: number } }
+  | { type: "culprit"; payload: { commit: PublicCommit; confidence: number; probes: number; uniformSteps: number; gitVerdict?: number; gitSteps?: number[] } }
   | { type: "verdict"; payload: { markdown: string } }
   | { type: "amends"; payload: AmendsResult }
   | { type: "closed"; payload: { caseId: string; caseFile: string } }
   /** operational chatter worth showing the player (rate-limit retries, fallbacks) */
   | { type: "note"; payload: { level: "info" | "warn"; text: string } }
+  /** Timing tick so the UI can show ES kNN vs Gemini vs oracle latency live */
+  | { type: "span"; payload: { name: string; op: string; durationMs: number; attrs?: Record<string, string | number | boolean | undefined> } }
   | { type: "error"; payload: { message: string } };
 
 export type CaseEmitter = (event: CaseEvent) => void;

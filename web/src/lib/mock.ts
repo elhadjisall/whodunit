@@ -220,6 +220,8 @@ export function startMockCase(opts: CaseOptions, onEvent: (e: CaseEvent) => void
     emit({ type: "tool", payload: { name: "churn_hotspots", args: {} } });
     await wait(800);
     emit({ type: "tool", payload: { name: "ci_timeline", args: {} } });
+    await wait(900);
+    emit({ type: "tool", payload: { name: "file_suspicion", args: {} } });
     await wait(1000);
     emit({ type: "tool", payload: { name: "show_commit", args: { sha: C(CULPRIT).sha } } });
     await wait(900);

@@ -1,5 +1,6 @@
 import { es, INDEX } from "./client.js";
 import { getEmbedder, jinaRerank } from "../embed.js";
+import { span } from "../obs.js";
 
 export type EvidenceKind = "commit" | "hunk" | "ci-log" | "issue";
 
@@ -49,12 +50,25 @@ export async function searchEvidence(
   query: string,
   opts: { size?: number; kinds?: EvidenceKind[]; rerank?: boolean } = {},
 ): Promise<Evidence[]> {
+  return span("elasticsearch.hybrid_retrieval", "db.elasticsearch", { "db.system": "elasticsearch", "query.length": query.length }, (set) =>
+    searchEvidenceInner(repo, query, opts, set),
+  );
+}
+
+async function searchEvidenceInner(
+  repo: string,
+  query: string,
+  opts: { size?: number; kinds?: EvidenceKind[]; rerank?: boolean },
+  set: (k: string, v: string | number | boolean | undefined) => void,
+): Promise<Evidence[]> {
   const size = opts.size ?? 12;
   const kinds = opts.kinds ?? ["hunk", "commit", "ci-log", "issue"];
   const embedder = getEmbedder();
   const client = es();
 
-  const qvec = embedder ? (await embedder.embed([query], "query"))[0] : null;
+  const qvec = embedder
+    ? await span("elasticsearch.embed_query", "gen_ai.embeddings", { "gen_ai.system": "gemini" }, async () => (await embedder.embed([query], "query"))[0])
+    : null;
   const perIndex = Math.max(size * 2, 20);
 
   const fused = new Map<string, { hit: RankedHit; score: number; via: Set<string> }>();
@@ -83,6 +97,8 @@ export async function searchEvidence(
   };
   const hasVector: Record<EvidenceKind, boolean> = { commit: true, hunk: true, issue: true, "ci-log": false };
 
+  let bm25Hits = 0;
+  let knnHits = 0;
   await Promise.all(
     kinds.map(async (kind) => {
       const index = kindToIndex[kind];
@@ -110,6 +126,7 @@ export async function searchEvidence(
         _source_excludes: ["embedding"],
         highlight: HIGHLIGHT,
       });
+      bm25Hits += bm25.hits.hits.length;
       fuse(
         bm25.hits.hits.map((h) => ({
           id: h._id!,
@@ -121,7 +138,8 @@ export async function searchEvidence(
       );
 
       if (qvec && hasVector[kind]) {
-        const knn = await client.search({
+        const knn = await span("elasticsearch.knn", "db.elasticsearch", { "db.operation": "knn", index, k: perIndex }, async () =>
+          client.search({
           index,
           size: perIndex,
           knn: {
@@ -132,7 +150,9 @@ export async function searchEvidence(
             filter: { term: { repo } },
           },
           _source_excludes: ["embedding"],
-        });
+        }),
+        );
+        knnHits += knn.hits.hits.length;
         fuse(
           knn.hits.hits.map((h) => ({ id: h._id!, source: h._source as Record<string, unknown>, index })),
           "knn",
@@ -151,7 +171,12 @@ export async function searchEvidence(
       evidence = reranked.map((r) => ({ ...evidence[r.index], score: r.score, via: [...evidence[r.index].via, "rerank"] }));
     }
   }
-  return evidence.slice(0, size);
+  const out = evidence.slice(0, size);
+  set("candidates.count", out.length);
+  set("retriever.bm25_hits", bm25Hits);
+  set("retriever.knn_hits", knnHits);
+  set("retriever.fused", fused.size);
+  return out;
 }
 
 function evidenceText(e: Evidence): string {
@@ -270,6 +295,7 @@ export async function ciTimeline(repo: string): Promise<{ week: string; runs: nu
 | EVAL week = DATE_TRUNC(1 week, date)
 | STATS runs = COUNT(*), failed = COUNT(*) WHERE status == "failed", p50_ms = PERCENTILE(duration_ms, 50) BY week
 | SORT week ASC`;
+  return span("elasticsearch.esql.ci_timeline", "db.elasticsearch", { "db.operation": "esql" }, async () => {
   const res = (await es().esql.query({ query: q })) as unknown as { columns: { name: string }[]; values: unknown[][] };
   const cols = res.columns.map((c) => c.name);
   return res.values.map((row) => {
@@ -280,6 +306,30 @@ export async function ciTimeline(repo: string): Promise<{ week: string; runs: nu
       failed: Number(obj.failed),
       p50_ms: Math.round(Number(obj.p50_ms ?? 0)),
     };
+  });
+  });
+}
+
+/** File-level suspicion via ES|QL — the query Elastic judges actually want to see on the radar. */
+export async function fileSuspicion(repo: string): Promise<{ file: string; hunks: number; commits: number; suspicion: number }[]> {
+  const q = `FROM ${INDEX.hunks}
+| WHERE repo == "${repo.replace(/"/g, '\\"')}" AND file LIKE "src/*"
+| STATS hunks = COUNT(*), commits = COUNT_DISTINCT(sha) BY file
+| EVAL suspicion_score = hunks * 1.0 + commits * 0.5
+| SORT suspicion_score DESC
+| LIMIT 8`;
+  return span("elasticsearch.esql.file_suspicion", "db.elasticsearch", { "db.operation": "esql" }, async () => {
+    const res = (await es().esql.query({ query: q })) as unknown as { columns: { name: string }[]; values: unknown[][] };
+    const cols = res.columns.map((c) => c.name);
+    return res.values.map((row) => {
+      const obj = Object.fromEntries(cols.map((c, i) => [c, row[i]]));
+      return {
+        file: String(obj.file ?? ""),
+        hunks: Number(obj.hunks ?? 0),
+        commits: Number(obj.commits ?? 0),
+        suspicion: Number(obj.suspicion_score ?? 0),
+      };
+    });
   });
 }
 

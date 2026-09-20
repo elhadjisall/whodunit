@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { span } from "../obs.js";
 
 const GEMINI_ROOT = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -90,6 +91,8 @@ async function geminiGenerate(body: Record<string, unknown>): Promise<{
   usage: { prompt: number; completion: number };
 }> {
   if (!config.geminiApiKey) throw new Error("GEMINI_API_KEY is not set — the detective needs a brain.");
+  const apiKey = config.geminiApiKey;
+  return span("gemini.generate_content", "gen_ai.request", { "gen_ai.system": "gemini", "gen_ai.request.model": activeModel }, async (set) => {
   const candidates = [activeModel, ...FALLBACK_MODELS.filter((m) => m !== activeModel)];
   type GenerateResponse = {
     error?: { message: string };
@@ -101,7 +104,7 @@ async function geminiGenerate(body: Record<string, unknown>): Promise<{
     const model = candidates[i];
     const url = `${GEMINI_ROOT}/models/${model}:generateContent`;
     try {
-      json = (await geminiFetch(url, config.geminiApiKey, body, `Gemini ${model}`, { failFastOnQuota: i < candidates.length - 1 })) as GenerateResponse;
+      json = (await geminiFetch(url, apiKey, body, `Gemini ${model}`, { failFastOnQuota: i < candidates.length - 1 })) as GenerateResponse;
       if (model !== activeModel) {
         activeModel = model;
         retryListener?.(`brain switched to ${model} for the rest of this session`);
@@ -114,6 +117,9 @@ async function geminiGenerate(body: Record<string, unknown>): Promise<{
   if (!json) throw new Error("Gemini failed: every configured model is out of quota");
   const content = json.candidates?.[0]?.content ?? { role: "model", parts: [] };
   const text = (content.parts ?? []).map((p) => p.text ?? "").join("");
+  set("gen_ai.response.model", activeModel);
+  set("gen_ai.usage.input_tokens", json.usageMetadata?.promptTokenCount ?? 0);
+  set("gen_ai.usage.output_tokens", json.usageMetadata?.candidatesTokenCount ?? 0);
   return {
     content,
     text,
@@ -122,6 +128,7 @@ async function geminiGenerate(body: Record<string, unknown>): Promise<{
       completion: json.usageMetadata?.candidatesTokenCount ?? 0,
     },
   };
+  });
 }
 
 function declarations(tools: ToolDef<never>[]) {

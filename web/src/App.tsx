@@ -178,7 +178,7 @@ export default function App() {
   const caseLabel = tab === "108" ? "CASE #108" : `COLD CASE${state.caseId ? ` ${state.caseId.toUpperCase()}` : ""}`;
 
   return (
-    <div className="relative flex h-full flex-col">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
       <div className="lamp" />
       <div className="grain" />
       <div className="vignette" />
@@ -198,22 +198,23 @@ export default function App() {
         onOpenExtra={() => setExtraOpen(true)}
       />
 
-      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-[372px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_232px] gap-2 p-2">
-        <aside className="flex min-h-0 flex-col gap-2">
+      {/* Desktop: two columns + terminal, pinned to the window. */}
+      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-[372px_minmax(0,1fr)] grid-rows-[minmax(0,1fr)_232px] gap-2 overflow-hidden p-2">
+        <aside className="flex min-h-0 flex-col gap-2 overflow-hidden">
           <div className="shrink-0">
             <ComplaintDesk complaint={complaint} setComplaint={setComplaint} state={state} server={server} caseLabel={caseLabel} onRelease={onRelease} onSimulate={onSimulate} onReset={onReset} />
           </div>
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <Barometer state={state} eps={eps} setEps={setEps} flaky={flaky} setFlaky={setFlaky} locked={running} />
           </div>
         </aside>
 
-        <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_140px] gap-2">
+        <section className="grid min-h-0 grid-rows-[minmax(0,1fr)_140px] gap-2 overflow-hidden">
           <CorkBoard state={state} onInterrogate={onInterrogate} onAuto={onAuto} setHover={setHover} />
           <TimelineRail state={state} onInterrogate={onInterrogate} setHover={setHover} />
         </section>
 
-        <div className="col-span-2 min-h-0">
+        <div className="col-span-2 min-h-0 overflow-hidden">
           <TerminalDeck state={state} setHover={setHover} />
         </div>
       </main>

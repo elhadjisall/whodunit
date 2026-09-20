@@ -1,4 +1,4 @@
-import { churnHotspots, ciTimeline, fileTimeline, getCommit, getHunks, searchEvidence, type Evidence, type EvidenceKind } from "../es/search.js";
+import { churnHotspots, ciTimeline, fileSuspicion, fileTimeline, getCommit, getHunks, searchEvidence, type Evidence, type EvidenceKind } from "../es/search.js";
 import { hasLLM, runToolLoop } from "./llm.js";
 import { ui } from "../ui.js";
 
@@ -108,6 +108,13 @@ export async function investigate(repo: string, description: string, opts: { ver
       handler: async () => JSON.stringify(await ciTimeline(repo).catch((e) => ({ error: String(e) }))),
     },
     {
+      name: "file_suspicion",
+      description:
+        "ES|QL over diff hunks: FROM wd-hunks | WHERE file LIKE 'src/*' | STATS hunks=COUNT(*), commits=COUNT_DISTINCT(sha) BY file | EVAL suspicion_score. Returns the hottest source files in the range.",
+      parameters: { type: "object", properties: {} },
+      handler: async () => JSON.stringify(await fileSuspicion(repo).catch((e) => ({ error: String(e) }))),
+    },
+    {
       name: "show_commit",
       description: "Full commit metadata plus all of its diff hunks.",
       parameters: { type: "object", properties: { sha: { type: "string" } }, required: ["sha"] },
@@ -131,7 +138,7 @@ Method:
    commits whose *message* merely mentions the topic (messages lie; diffs don't). Beware red herrings: a commit that ADDED a
    feature is often innocent; a later "refactor"/"perf"/"cleanup" of the same code is a classic culprit.
 3. Use file_timeline / churn_hotspots for the files involved to find every commit that touched them.
-4. Use ci_timeline / ci-log evidence for hints (warnings, flaky reruns, timing changes) — CI logs are noisy, weigh them lightly.
+4. Use ci_timeline / file_suspicion (ES|QL) and ci-log evidence for hints (warnings, flaky reruns, which src files churned) — CI logs are noisy, weigh them lightly.
 
 When done (aim for 5-10 tool calls), reply with ONLY a JSON object:
 {"suspects":[{"sha":"<full or short sha>","score":<0-100>,"reason":"<one sentence citing the concrete evidence>"}],
