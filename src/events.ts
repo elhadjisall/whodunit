@@ -11,11 +11,19 @@ export interface PublicCommit {
   date: string;
   subject: string;
   files: string[];
+  /** posterior relative to the most likely commit (0..1) — the "heat" */
   p?: number;
+  /** absolute posterior probability mass (0..1) */
+  mass?: number;
   probed?: "good" | "bad";
+  /** CI status of the run at this commit, when a log was indexed */
+  ci?: "passed" | "failed";
 }
 
-export function publicCommit(c: CommitInfo, extra: { p?: number; probed?: "good" | "bad" } = {}): PublicCommit {
+export function publicCommit(
+  c: CommitInfo,
+  extra: { p?: number; mass?: number; probed?: "good" | "bad"; ci?: "passed" | "failed" } = {},
+): PublicCommit {
   return {
     index: c.order,
     sha: c.sha,
@@ -38,7 +46,7 @@ export type CaseEvent =
   | { type: "repro"; payload: { explanation: string; command: string; headOutput: string } }
   | { type: "prior"; payload: { entropyBits: number; uniformBits: number; uniformProbes: number; credible90: number; board: PublicCommit[] } }
   | { type: "awaiting_probe"; payload: { step: number; autoIndex: number | null; autoCommit?: PublicCommit; board: PublicCommit[]; message: string } }
-  | { type: "probe"; payload: { step: number; index: number; commit: PublicCommit; result: "good" | "bad"; pBad: number; durationMs: number; by: "detective" | "player" } }
+  | { type: "probe"; payload: { step: number; index: number; commit: PublicCommit; result: "good" | "bad"; pBad: number; durationMs: number; by: "detective" | "player"; flaked?: boolean } }
   | { type: "posterior"; payload: { board: PublicCommit[]; highlight?: number } }
   | { type: "culprit"; payload: { commit: PublicCommit; confidence: number; probes: number; uniformSteps: number } }
   | { type: "verdict"; payload: { markdown: string } }

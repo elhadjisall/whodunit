@@ -4,7 +4,7 @@ import path from "node:path";
 import { credibleSet, entropyBits, initState, makePrior, mostLikely, nextProbe, pBad, update, uniformProbes, type BisectState } from "./bayes.js";
 import { config } from "./config.js";
 import { bulkIndex, INDEX } from "./es/client.js";
-import { listCommits } from "./es/search.js";
+import { listCiStatus, listCommits } from "./es/search.js";
 import { commitHunks, gitLog, headSha, repoName, runAt, WorktreePool, type CommitInfo } from "./git.js";
 import { investigate, type Investigation } from "./agent/investigate.js";
 import { synthesizeRepro, validateTest, type ReproTest } from "./agent/repro.js";
@@ -23,6 +23,8 @@ export interface SolveOptions {
   fix?: boolean;
   pr?: boolean;
   eps?: number;
+  /** Demo knob: probability that an observed probe result is flipped, to simulate a flaky oracle. */
+  noise?: number;
   confidence?: number;
   maxProbes?: number;
   timeoutMs?: number;
@@ -30,6 +32,8 @@ export interface SolveOptions {
   onEvent?: CaseEmitter;
   chooseProbe?: ChooseProbe;
 }
+
+type Pub = (c: CommitInfo, extra?: { p?: number; mass?: number; probed?: "good" | "bad" }) => ReturnType<typeof publicCommit>;
 
 export interface CaseResult {
   caseId: string;
@@ -57,20 +61,10 @@ export function simulateUniformBisect(n: number, culprit: number): number {
   return steps;
 }
 
-function boardOf(
-  commits: CommitInfo[],
-  posterior: number[],
-  probed: Map<number, "good" | "bad">,
-  take = 14,
-) {
+/** The whole lineup with relative heat (p) and absolute mass, so a UI can paint every commit. */
+function boardOf(pub: Pub, commits: CommitInfo[], posterior: number[], probed: Map<number, "good" | "bad">) {
   const max = Math.max(...posterior, 1e-9);
-  const idx = posterior
-    .map((p, i) => [p, i] as const)
-    .sort((a, b) => b[0] - a[0])
-    .slice(0, take)
-    .map(([, i]) => i)
-    .sort((a, b) => a - b);
-  return idx.map((i) => publicCommit(commits[i], { p: posterior[i] / max, probed: probed.get(i) }));
+  return commits.map((c, i) => pub(c, { p: posterior[i] / max, mass: posterior[i], probed: probed.get(i) }));
 }
 
 export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
@@ -101,6 +95,8 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   const n = commits.length;
   const oldest = commits[0];
   const newest = commits[n - 1];
+  const ciBySha = await listCiStatus(repo);
+  const pub: Pub = (c, extra = {}) => publicCommit(c, { ci: ciBySha.get(c.sha), ...extra });
   ui.kv("range", `${oldest.short}..${newest.short} (${n} commits, ${oldest.date.slice(0, 10)} → ${newest.date.slice(0, 10)})`);
   emit({
     type: "opened",
@@ -112,9 +108,9 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       vectors: config.embedProvider,
       range: `${oldest.short}..${newest.short}`,
       commitCount: n,
-      oldest: publicCommit(oldest),
-      newest: publicCommit(newest),
-      commits: commits.map((c) => publicCommit(c)),
+      oldest: pub(oldest),
+      newest: pub(newest),
+      commits: commits.map((c) => pub(c)),
     },
   });
 
@@ -145,7 +141,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
         ...s,
         commit: (() => {
           const c = commits.find((c) => c.sha === s.sha);
-          return c ? publicCommit(c) : undefined;
+          return c ? pub(c) : undefined;
         })(),
       })),
     },
@@ -219,7 +215,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
         uniformBits: Math.log2(n - 1),
         uniformProbes: uniformProbes(n - 1),
         credible90: credibleSet(state, 0.9).length,
-        board: boardOf(commits, state.posterior, new Map([[0, "good"], [n - 1, "bad"]])),
+        board: boardOf(pub, commits, state.posterior, new Map([[0, "good"], [n - 1, "bad"]])),
       },
     });
     emit({ type: "phase", payload: { phase: "bisect", title: "Interrogation room" } });
@@ -228,20 +224,35 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     const maxProbes = opts.maxProbes ?? Math.max(8, uniformProbes(n) + 4);
     let step = 0;
     const cache = new Map<number, "good" | "bad">([[0, "good"], [n - 1, "bad"]]);
+    const noise = Math.min(0.9, Math.max(0, opts.noise ?? 0));
     const probe = async (k: number, by: "detective" | "player" = "detective") => {
       step++;
       const c = commits[k];
       const pb = pBad(state, k);
       const r = await runAt(pool, c.sha, test.command, { setup: opts.setup, timeoutMs: opts.timeoutMs });
-      const result: "good" | "bad" = r.exitCode === 0 ? "good" : "bad";
+      const truth: "good" | "bad" = r.exitCode === 0 ? "good" : "bad";
+      // Simulated flaky oracle (demo): sometimes the test lies. The Bayesian update treats every
+      // observation as noisy (eps), so a lie costs a probe or two instead of derailing the search.
+      const flaked = noise > 0 && Math.random() < noise;
+      const result: "good" | "bad" = flaked ? (truth === "good" ? "bad" : "good") : truth;
       cache.set(k, result);
       update(state, k, result, r.durationMs);
       ui.probeLine(step, k, c.short, c.subject, result, pb, r.durationMs);
+      if (flaked) console.log(`  ${ui.dim("(simulated flake: the oracle lied on this run)")}`);
       emit({
         type: "probe",
-        payload: { step, index: k, commit: publicCommit(c, { probed: result, p: state.posterior[k] }), result, pBad: pb, durationMs: r.durationMs, by },
+        payload: {
+          step,
+          index: k,
+          commit: pub(c, { probed: result, p: state.posterior[k], mass: state.posterior[k] }),
+          result,
+          pBad: pb,
+          durationMs: r.durationMs,
+          by,
+          ...(flaked ? { flaked: true } : {}),
+        },
       });
-      emit({ type: "posterior", payload: { board: boardOf(commits, state.posterior, cache), highlight: k } });
+      emit({ type: "posterior", payload: { board: boardOf(pub, commits, state.posterior, cache), highlight: k } });
       return result;
     };
 
@@ -269,8 +280,8 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
           payload: {
             step: step + 1,
             autoIndex,
-            autoCommit: publicCommit(commits[autoIndex]),
-            board: boardOf(commits, state.posterior, cache, 18),
+            autoCommit: pub(commits[autoIndex]),
+            board: boardOf(pub, commits, state.posterior, cache),
             message: "Pick a commit to interrogate — or let the detective take the information-optimal probe.",
           },
         });
@@ -278,7 +289,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
           caseId,
           step: step + 1,
           autoIndex,
-          board: boardOf(commits, state.posterior, cache, 24),
+          board: boardOf(pub, commits, state.posterior, cache),
         });
         if (typeof choice === "number" && choice >= 0 && choice < n) k = choice;
         await probe(k, typeof choice === "number" && choice !== autoIndex ? "player" : "detective");
@@ -298,7 +309,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     );
     emit({
       type: "culprit",
-      payload: { commit: publicCommit(culprit, { p: conf, probed: "bad" }), confidence: conf, probes: step, uniformSteps },
+      payload: { commit: pub(culprit, { p: 1, mass: conf, probed: "bad" }), confidence: conf, probes: step, uniformSteps },
     });
 
     /* 4. Verdict ---------------------------------------------------- */

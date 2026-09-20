@@ -6,15 +6,16 @@ import { config } from "./config.js";
 import { pingEs } from "./es/client.js";
 import { listCommits } from "./es/search.js";
 import { ingestRepo } from "./ingest.js";
-import { repoName } from "./git.js";
+import { commitHunks, gitLog, headSha, repoName } from "./git.js";
 import { generateDemo } from "./demo/generate.js";
 import { solveCase } from "./case.js";
+import { makeAmends } from "./agent/amends.js";
 import { hasLLM, llmLabel } from "./agent/llm.js";
 import { ui } from "./ui.js";
-import type { CaseEvent } from "./events.js";
+import type { CaseEvent, PublicCommit } from "./events.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const webRoot = path.join(here, "..", "web");
+const webRoot = path.join(here, "..", "web", "dist");
 
 const DEMO_REPO = "/tmp/whodunit-demo/acme-ledger";
 const DEMO_TEST = "bash /tmp/whodunit-demo/repro-credit-note.sh";
@@ -26,6 +27,16 @@ interface Session {
   events: CaseEvent[];
   clients: Set<http.ServerResponse>;
   probeWait?: (choice: number | "auto") => void;
+  /** context captured from the event stream so a fix can be requested after the verdict */
+  ctx: {
+    caseId?: string;
+    description: string;
+    culprit?: PublicCommit;
+    verdict?: string;
+    reproCommand?: string;
+    reproOutput?: string;
+    fixing?: boolean;
+  };
 }
 
 const sessions = new Map<string, Session>();
@@ -36,16 +47,37 @@ function send(res: http.ServerResponse, event: CaseEvent) {
 
 function push(session: Session, event: CaseEvent) {
   session.events.push(event);
+  if (event.type === "opened") session.ctx.caseId = event.payload.caseId;
+  if (event.type === "repro") {
+    session.ctx.reproCommand = event.payload.command;
+    session.ctx.reproOutput = event.payload.headOutput;
+  }
+  if (event.type === "culprit") session.ctx.culprit = event.payload.commit;
+  if (event.type === "verdict") session.ctx.verdict = event.payload.markdown;
   for (const client of session.clients) send(client, event);
 }
 
+const MIME: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+};
+
 function mime(file: string) {
-  if (file.endsWith(".html")) return "text/html; charset=utf-8";
-  if (file.endsWith(".css")) return "text/css; charset=utf-8";
-  if (file.endsWith(".js")) return "text/javascript; charset=utf-8";
-  if (file.endsWith(".svg")) return "image/svg+xml";
-  if (file.endsWith(".png")) return "image/png";
-  return "application/octet-stream";
+  return MIME[path.extname(file).toLowerCase()] ?? "application/octet-stream";
 }
 
 async function readBody(req: http.IncomingMessage): Promise<string> {
@@ -74,11 +106,18 @@ async function ensureDemoIndexed(repoPath: string) {
   }
 }
 
+const num = (v: unknown, fallback: number, lo: number, hi: number) => {
+  const x = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : fallback;
+};
+
 export async function startPlayServer(opts: { port: number; repoPath?: string }) {
   const repoPath = path.resolve(opts.repoPath ?? DEMO_REPO);
   await ensureDemoIndexed(repoPath);
   const repo = await repoName(repoPath);
   const commitCount = (await listCommits(repo)).length;
+  const hasDist = fs.existsSync(path.join(webRoot, "index.html"));
+  if (!hasDist) ui.warn("web/dist is missing — run `npm run build:web` to build the detective UI.");
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
@@ -96,12 +135,14 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
         const es = await pingEs();
         json(res, {
           es: es.ok ? es.version : null,
+          esUrl: config.esUrl,
           brain: hasLLM() ? llmLabel() : null,
           vectors: config.embedProvider,
           repo,
           repoPath,
           commitCount,
           demoComplaint: DEMO_COMPLAINT,
+          canFix: hasLLM(),
         });
         return;
       }
@@ -111,11 +152,13 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
           description?: string;
           mode?: "auto" | "player";
           fix?: boolean;
+          eps?: number;
+          noise?: number;
         };
-        const session: Session = { id: crypto.randomUUID(), events: [], clients: new Set() };
+        const description = (body.description ?? DEMO_COMPLAINT).trim() || DEMO_COMPLAINT;
+        const session: Session = { id: crypto.randomUUID(), events: [], clients: new Set(), ctx: { description } };
         sessions.set(session.id, session);
         json(res, { caseStream: session.id });
-        const description = (body.description ?? DEMO_COMPLAINT).trim() || DEMO_COMPLAINT;
         const player = body.mode === "player";
         setTimeout(() => {
           solveCase({
@@ -124,6 +167,8 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
             test: fs.existsSync("/tmp/whodunit-demo/repro-credit-note.sh") ? DEMO_TEST : undefined,
             fix: !!body.fix && hasLLM(),
             verify: body.fix ? "npm test" : undefined,
+            eps: num(body.eps, 0.05, 0.001, 0.4),
+            noise: num(body.noise, 0, 0, 0.9),
             verbose: true,
             onEvent: (e) => push(session, e),
             chooseProbe: player
@@ -135,7 +180,7 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
                         session.probeWait = undefined;
                         resolve("auto");
                       }
-                    }, 90_000);
+                    }, 120_000);
                     void ctx;
                   })
               : undefined,
@@ -162,7 +207,11 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
         res.write(":\n\n");
         for (const ev of session.events) send(res, ev);
         session.clients.add(res);
-        req.on("close", () => session.clients.delete(res));
+        const beat = setInterval(() => res.write(":beat\n\n"), 15_000);
+        req.on("close", () => {
+          clearInterval(beat);
+          session.clients.delete(res);
+        });
         return;
       }
 
@@ -181,20 +230,100 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
         return;
       }
 
+      /* Draft, prove and commit a fix on a branch — the "EXECUTE FIX" button. */
+      if (url.pathname.startsWith("/api/fix/") && req.method === "POST") {
+        const id = url.pathname.split("/").pop() ?? "";
+        const session = sessions.get(id);
+        const body = JSON.parse((await readBody(req)) || "{}") as { branch?: string };
+        if (!session) {
+          json(res, { ok: false, error: "unknown case" }, 404);
+          return;
+        }
+        if (!hasLLM()) {
+          json(res, { ok: false, error: "The fixer needs GEMINI_API_KEY." }, 400);
+          return;
+        }
+        const { culprit, verdict, reproCommand, caseId } = session.ctx;
+        if (!culprit || !verdict || !reproCommand || !caseId) {
+          json(res, { ok: false, error: "No verdict yet — the case is still open." }, 409);
+          return;
+        }
+        if (session.ctx.fixing) {
+          json(res, { ok: false, error: "A fix is already being drafted." }, 409);
+          return;
+        }
+        session.ctx.fixing = true;
+        push(session, { type: "phase", payload: { phase: "amends", title: "Drafting a fix and proving it with the reproduction" } });
+        try {
+          const [full] = await gitLog(repoPath, { range: `${culprit.sha}~1..${culprit.sha}` });
+          const hunks = await commitHunks(repoPath, culprit.sha);
+          const amends = await makeAmends({
+            repoPath,
+            headSha: await headSha(repoPath),
+            culprit: full ?? {
+              sha: culprit.sha,
+              short: culprit.short,
+              order: culprit.index,
+              author: culprit.author,
+              email: "",
+              date: culprit.date,
+              subject: culprit.subject,
+              message: "",
+              files: culprit.files,
+              insertions: 0,
+              deletions: 0,
+            },
+            hunks,
+            description: session.ctx.description,
+            verdict,
+            reproCommand,
+            reproOutput: session.ctx.reproOutput ?? "",
+            caseId,
+            verify: "npm test",
+            branch: (body.branch ?? "fix/whodunit-patch").replace(/[^\w./-]/g, "-"),
+          });
+          push(session, { type: "amends", payload: amends });
+          json(res, { ok: true, amends });
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          push(session, { type: "error", payload: { message: `No fix: ${message}` } });
+          json(res, { ok: false, error: message }, 500);
+        } finally {
+          session.ctx.fixing = false;
+        }
+        return;
+      }
+
       if (req.method === "GET") {
-        const rel = url.pathname === "/" ? "/index.html" : url.pathname;
-        const file = path.normalize(path.join(webRoot, rel));
+        if (!hasDist) {
+          res.writeHead(503, { "Content-Type": "text/html; charset=utf-8" });
+          res.end(
+            `<!doctype html><body style="background:#111;color:#ebdcb9;font:16px/1.5 ui-monospace,monospace;padding:3rem">
+<h1>whodunit</h1><p>The detective UI has not been built yet.</p><pre>npm run build:web</pre><p>then reload this page.</p></body>`,
+          );
+          return;
+        }
+        let rel = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
+        let file = path.normalize(path.join(webRoot, rel));
         if (!file.startsWith(webRoot)) {
           res.writeHead(403);
           res.end();
           return;
+        }
+        // SPA fallback: unknown extension-less paths serve the app shell.
+        if ((!fs.existsSync(file) || fs.statSync(file).isDirectory()) && !path.extname(rel)) {
+          rel = "/index.html";
+          file = path.join(webRoot, "index.html");
         }
         if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
           res.writeHead(404);
           res.end("not found");
           return;
         }
-        res.writeHead(200, { "Content-Type": mime(file) });
+        const headers: Record<string, string> = { "Content-Type": mime(file) };
+        if (rel.startsWith("/assets/")) headers["Cache-Control"] = "public, max-age=31536000, immutable";
+        else headers["Cache-Control"] = "no-cache";
+        res.writeHead(200, headers);
         fs.createReadStream(file).pipe(res);
         return;
       }

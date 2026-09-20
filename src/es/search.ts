@@ -328,6 +328,27 @@ export async function listCases(repo?: string) {
   );
 }
 
+/** sha -> CI status for every indexed CI run of the repo (first run per commit wins). */
+export async function listCiStatus(repo: string): Promise<Map<string, "passed" | "failed">> {
+  const out = new Map<string, "passed" | "failed">();
+  try {
+    const res = await es().search({
+      index: INDEX.logs,
+      size: 5000,
+      query: { term: { repo } },
+      sort: [{ order: "asc" }],
+      _source: ["sha", "status"],
+    });
+    for (const h of res.hits.hits) {
+      const s = h._source as { sha: string; status: string };
+      if (!out.has(s.sha)) out.set(s.sha, s.status === "failed" ? "failed" : "passed");
+    }
+  } catch {
+    /* logs index may not exist */
+  }
+  return out;
+}
+
 export async function listCommits(repo: string): Promise<{ sha: string; short: string; order: number; subject: string; author: string; date: string; files: string[] }[]> {
   const res = await es().search({
     index: INDEX.commits,

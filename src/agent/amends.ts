@@ -15,6 +15,9 @@ export interface AmendsResult {
   filesChanged: string[];
   prUrl?: string;
   verifyPassed?: boolean;
+  /** unified diff of the fix commit (HEAD..branch) */
+  diff?: string;
+  commitMessage?: string;
 }
 
 interface FixProposal {
@@ -40,8 +43,9 @@ export async function makeAmends(args: {
   setup?: string;
   openPr?: boolean;
   maxAttempts?: number;
+  branch?: string;
 }): Promise<AmendsResult> {
-  const branch = `whodunit/fix-${args.caseId}`;
+  const branch = args.branch ?? `whodunit/fix-${args.caseId}`;
   const dir = path.join(path.dirname(args.repoPath), `.whodunit-fix-${args.caseId}`);
   await fs.rm(dir, { recursive: true, force: true });
   await git(args.repoPath, ["branch", "-D", branch]).catch(() => {});
@@ -119,6 +123,7 @@ ${feedback}`,
       const msg = `${proposal.commit_message.trim()}\n\nFixes regression introduced in ${args.culprit.sha}.\nCase: whodunit/${args.caseId}`;
       await git(dir, ["-c", "user.name=whodunit", "-c", "user.email=whodunit@localhost", "commit", "-q", "-m", msg]);
       const sha = (await git(dir, ["rev-parse", "HEAD"])).trim();
+      const diff = await git(dir, ["diff", `${args.headSha}..${sha}`]).catch(() => "");
 
       let prUrl: string | undefined;
       if (args.openPr) {
@@ -134,7 +139,16 @@ ${feedback}`,
           console.log(`  ${ui.dim(`could not open PR: ${e instanceof Error ? e.message.split("\n")[0] : e}`)}`);
         }
       }
-      return { branch, commitSha: sha, summary: proposal.summary, filesChanged: proposal.files.map((f) => f.path), prUrl, verifyPassed };
+      return {
+        branch,
+        commitSha: sha,
+        summary: proposal.summary,
+        filesChanged: proposal.files.map((f) => f.path),
+        prUrl,
+        verifyPassed,
+        diff: diff.slice(0, 20_000),
+        commitMessage: proposal.commit_message.trim(),
+      };
     }
     throw new Error(`Could not produce a passing fix after ${maxAttempts} attempts${last ? ` (last idea: ${last.summary})` : ""}`);
   } finally {
