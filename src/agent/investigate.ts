@@ -45,7 +45,7 @@ function keywordQueries(description: string): string[] {
 }
 const STOP = new Set(["since", "sometime", "last", "week", "month", "when", "with", "from", "that", "this", "have", "been", "started", "stopped", "after", "before", "some", "into", "than", "then", "there", "their", "about", "which", "wrong", "broken", "breaks", "bug"]);
 
-export async function investigate(repo: string, description: string, opts: { verbose?: boolean } = {}): Promise<Investigation> {
+export async function investigate(repo: string, description: string, opts: { verbose?: boolean; onToolCall?: (name: string, args: Record<string, unknown>) => void; onEvidence?: (items: Evidence[]) => void } = {}): Promise<Investigation> {
   const evidenceLog: Evidence[] = [];
   const queries: string[] = [];
 
@@ -53,6 +53,7 @@ export async function investigate(repo: string, description: string, opts: { ver
     queries.push(q);
     const ev = await searchEvidence(repo, q, { size: 12, kinds });
     evidenceLog.push(...ev);
+    opts.onEvidence?.(dedupe(evidenceLog));
     return ev;
   };
 
@@ -63,7 +64,7 @@ export async function investigate(repo: string, description: string, opts: { ver
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([sha, score]) => ({ sha, score, reason: "surfaced by hybrid search over diffs, commit messages and CI logs" }));
-    return { suspicion, suspects, evidence: dedupe(evidenceLog), queries, notes: "heuristic mode (no OPENAI_API_KEY)", mode: "heuristic" };
+    return { suspicion, suspects, evidence: dedupe(evidenceLog), queries, notes: "heuristic mode (no GEMINI_API_KEY)", mode: "heuristic" };
   }
 
   const tools = [
@@ -140,6 +141,7 @@ Include 3-8 suspects. Scores are relative suspicion, not probabilities.`;
   const result = await runToolLoop(system, `Bug report: ${description}\n\nRepository: ${repo}`, tools as never, {
     maxTurns: 14,
     onToolCall: (name, args) => {
+      opts.onToolCall?.(name, args);
       if (opts.verbose !== false) console.log(`  ${ui.dim("→")} ${ui.dim(name)} ${ui.dim(JSON.stringify(args).slice(0, 110))}`);
     },
   });

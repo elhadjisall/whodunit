@@ -8,7 +8,7 @@ import { ingestRepo } from "./ingest.js";
 import { repoName } from "./git.js";
 import { solveCase } from "./case.js";
 import { generateDemo } from "./demo/generate.js";
-import { hasLLM } from "./agent/llm.js";
+import { hasLLM, llmLabel } from "./agent/llm.js";
 import { ui } from "./ui.js";
 
 const program = new Command();
@@ -28,9 +28,9 @@ program
     const es = await pingEs();
     if (es.ok) ui.ok(`Elasticsearch ${es.version} at ${config.esUrl}`);
     else ui.fail(`Elasticsearch unreachable at ${config.esUrl}: ${es.error}\n    start one with: npm run es:start`);
-    if (hasLLM()) ui.ok(`OpenAI model ${config.openaiModel}`);
-    else ui.warn("OPENAI_API_KEY not set — investigation runs in heuristic mode and --test is required");
-    if (config.embedProvider === "none") ui.warn("No embedding provider — BM25-only retrieval. Set JINA_API_KEY (preferred) or OPENAI_API_KEY for hybrid search.");
+    if (hasLLM()) ui.ok(llmLabel());
+    else ui.warn("GEMINI_API_KEY not set — investigation runs in heuristic mode and --test is required");
+    if (config.embedProvider === "none") ui.warn("No embedding provider — BM25-only retrieval. Set GEMINI_API_KEY for hybrid search.");
     else ui.ok(`Dense vectors via ${config.embedProvider}`);
   });
 
@@ -162,6 +162,16 @@ program
     }
   });
 
+program
+  .command("play")
+  .description("open the interactive detective-game UI in a browser")
+  .option("-p, --port <n>", "port", "3333")
+  .option("-r, --repo <path>", "indexed git repo (default: demo acme-ledger)")
+  .action(async (o) => {
+    const { startPlayServer } = await import("./server.js");
+    await startPlayServer({ port: Number(o.port), repoPath: o.repo });
+  });
+
 const demo = program.command("demo").description("generate and explore the acme-ledger demo repository");
 demo
   .command("generate")
@@ -179,6 +189,7 @@ demo
   Next:
     whodunit index --repo ${r.path}
     whodunit solve --repo ${r.path} "Credit notes with a discount export to CSV with a TOTAL that is a cent off from the invoice total. Started sometime in the last few weeks." ${hasLLM() ? "--fix" : `--test "bash ${path.join(path.dirname(r.path), "repro-credit-note.sh")}"`}
+    whodunit play
 `);
   });
 

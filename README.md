@@ -71,9 +71,9 @@ Requirements: Node ≥ 20, git, Java is bundled with Elasticsearch (no Docker ne
 ```bash
 npm install
 npm run es:start                 # downloads + runs a local single-node Elasticsearch 9.x (~/.whodunit)
-export OPENAI_API_KEY=sk-...     # the brain (any OpenAI-compatible endpoint via OPENAI_BASE_URL)
-export JINA_API_KEY=jina_...     # optional: Jina dense vectors + reranker for hybrid search
+export GEMINI_API_KEY=...        # the brain (Gemini 3.6 Flash). Optional: JINA_API_KEY for Jina vectors
 npx whodunit doctor
+npx whodunit play                # noir detective game at http://127.0.0.1:3333
 ```
 
 ### The demo crime scene
@@ -112,7 +112,7 @@ npx whodunit solve --repo ~/code/my-service "POST /export returns 500 for CSVs o
 | variable | purpose | default |
 |---|---|---|
 | `ELASTICSEARCH_URL` / `ELASTICSEARCH_API_KEY` | Elastic node (local or Cloud/Serverless) | `http://127.0.0.1:9200` |
-| `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL` | agent brain | `gpt-4.1` |
+| `GEMINI_API_KEY` / `GEMINI_MODEL` | agent brain | `gemini-3.6-flash` |
 | `JINA_API_KEY` | `jina-embeddings-v3` dense vectors + `jina-reranker-v2` | — |
 | `WHODUNIT_EMBED` | force `jina` / `openai` / `none` | auto |
 | `WHODUNIT_HOME` | cases, repro scripts, local ES | `~/.whodunit` |
@@ -121,7 +121,7 @@ npx whodunit solve --repo ~/code/my-service "POST /export returns 500 for CSVs o
 
 - **Elastic — Find the Signal.** Messy, unstructured inputs (diffs, ANSI-laden CI logs, issue threads) become an agent's context layer: hybrid BM25 + dense vectors + RRF + reranking, `word_delimiter_graph` code analyzer, terms/date-histogram aggregations, ES|QL for time-series, and an agent whose tools *are* Elasticsearch queries — and that closes the loop by committing a fix instead of answering a question.
 - **Warp — Best Developer Tool.** A CLI for the debugging part of the lifecycle that replaces the most tedious ritual in git with something that reads the evidence first. No GUI for the sake of it; the terminal output *is* the UX (live posterior histogram, probe log with "surprise!" markers, case files).
-- **OpenAI — API prize.** Three specialised agents (investigator, reproduction specialist, fixer) built on tool calling and JSON mode, each validated by execution rather than trusted.
+- **OpenAI / Gemini.** Three specialised agents (investigator, reproduction specialist, fixer) on tool calling. Default brain is Gemini 3.6 Flash.
 
 ## Limitations
 

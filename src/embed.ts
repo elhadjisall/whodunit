@@ -1,11 +1,13 @@
 import OpenAI from "openai";
 import { config } from "./config.js";
+import { geminiFetch } from "./agent/llm.js";
 
 /**
  * Embedding provider abstraction.
- *  - jina   : Jina dense vectors (jina-embeddings-v3, 1024 dims) — preferred, matches the Elastic track
+ *  - jina   : Jina dense vectors (jina-embeddings-v3, 1024 dims)
+ *  - gemini : gemini-embedding-001 (768 dims) — default when GEMINI_API_KEY is set
  *  - openai : text-embedding-3-small (1536 dims)
- *  - none   : BM25-only mode (no dense vectors; hybrid search degrades gracefully)
+ *  - none   : BM25-only mode
  */
 export interface Embedder {
   name: string;
@@ -40,6 +42,35 @@ class JinaEmbedder implements Embedder {
   }
 }
 
+class GeminiEmbedder implements Embedder {
+  name = "gemini-embedding-001";
+  dims = 768;
+  constructor(private apiKey: string) {}
+  async embed(texts: string[], task: "passage" | "query" = "passage"): Promise<number[][]> {
+    const out: number[][] = [];
+    const taskType = task === "query" ? "RETRIEVAL_QUERY" : "RETRIEVAL_DOCUMENT";
+    for (let i = 0; i < texts.length; i += 8) {
+      const batch = texts.slice(i, i + 8).map((t) => t.slice(0, 8000));
+      const json = (await geminiFetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.name}:batchEmbedContents`,
+        this.apiKey,
+        {
+          requests: batch.map((text) => ({
+            model: `models/${this.name}`,
+            content: { parts: [{ text }] },
+            taskType,
+            outputDimensionality: this.dims,
+          })),
+        },
+        "Gemini embeddings",
+      )) as { embeddings: { values: number[] }[] };
+      out.push(...json.embeddings.map((e) => e.values));
+      await new Promise((r) => setTimeout(r, 700));
+    }
+    return out;
+  }
+}
+
 class OpenAIEmbedder implements Embedder {
   name = "text-embedding-3-small";
   dims = 1536;
@@ -63,6 +94,9 @@ export function getEmbedder(): Embedder | null {
     case "jina":
       if (!config.jinaApiKey) throw new Error("WHODUNIT_EMBED=jina but JINA_API_KEY is not set");
       return new JinaEmbedder(config.jinaApiKey);
+    case "gemini":
+      if (!config.geminiApiKey) throw new Error("WHODUNIT_EMBED=gemini but GEMINI_API_KEY is not set");
+      return new GeminiEmbedder(config.geminiApiKey);
     case "openai":
       if (!config.openaiApiKey) throw new Error("WHODUNIT_EMBED=openai but OPENAI_API_KEY is not set");
       return new OpenAIEmbedder(config.openaiApiKey);
@@ -71,7 +105,6 @@ export function getEmbedder(): Embedder | null {
   }
 }
 
-/** Jina reranker (optional). Returns indices sorted by relevance with scores. */
 export async function jinaRerank(
   query: string,
   documents: string[],

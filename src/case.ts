@@ -10,8 +10,9 @@ import { investigate, type Investigation } from "./agent/investigate.js";
 import { synthesizeRepro, validateTest, type ReproTest } from "./agent/repro.js";
 import { writeVerdict } from "./agent/verdict.js";
 import { makeAmends, type AmendsResult } from "./agent/amends.js";
-import { hasLLM } from "./agent/llm.js";
+import { hasLLM, llmLabel } from "./agent/llm.js";
 import { ui } from "./ui.js";
+import { publicCommit, type CaseEmitter, type ChooseProbe } from "./events.js";
 
 export interface SolveOptions {
   repoPath: string;
@@ -26,6 +27,8 @@ export interface SolveOptions {
   maxProbes?: number;
   timeoutMs?: number;
   verbose?: boolean;
+  onEvent?: CaseEmitter;
+  chooseProbe?: ChooseProbe;
 }
 
 export interface CaseResult {
@@ -54,18 +57,35 @@ export function simulateUniformBisect(n: number, culprit: number): number {
   return steps;
 }
 
+function boardOf(
+  commits: CommitInfo[],
+  posterior: number[],
+  probed: Map<number, "good" | "bad">,
+  take = 14,
+) {
+  const max = Math.max(...posterior, 1e-9);
+  const idx = posterior
+    .map((p, i) => [p, i] as const)
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, take)
+    .map(([, i]) => i)
+    .sort((a, b) => a - b);
+  return idx.map((i) => publicCommit(commits[i], { p: posterior[i] / max, probed: probed.get(i) }));
+}
+
 export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   const repo = await repoName(opts.repoPath);
   const caseId = crypto.randomBytes(3).toString("hex");
   const caseDir = path.join(config.homeDir, "cases", caseId);
   await fs.mkdir(caseDir, { recursive: true });
+  const emit: CaseEmitter = (e) => opts.onEvent?.(e);
 
   ui.section("CASE FILE");
   ui.kv("repo", repo);
   ui.kv("case", caseId);
   ui.kv("complaint", `"${opts.description}"`);
-  ui.kv("brain", hasLLM() ? `${config.openaiModel}` : ui.dim("none (heuristic mode) — set OPENAI_API_KEY"));
-  ui.kv("vectors", config.embedProvider === "none" ? ui.dim("BM25 only — set JINA_API_KEY for hybrid") : config.embedProvider);
+  ui.kv("brain", hasLLM() ? llmLabel() : ui.dim("none (heuristic mode) — set GEMINI_API_KEY"));
+  ui.kv("vectors", config.embedProvider === "none" ? ui.dim("BM25 only — set GEMINI_API_KEY for hybrid") : config.embedProvider);
 
   // The range under investigation is whatever was indexed for this repo.
   const indexed = await listCommits(repo);
@@ -82,10 +102,30 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
   const oldest = commits[0];
   const newest = commits[n - 1];
   ui.kv("range", `${oldest.short}..${newest.short} (${n} commits, ${oldest.date.slice(0, 10)} → ${newest.date.slice(0, 10)})`);
+  emit({
+    type: "opened",
+    payload: {
+      caseId,
+      repo,
+      description: opts.description,
+      brain: hasLLM() ? llmLabel() : "heuristic",
+      vectors: config.embedProvider,
+      range: `${oldest.short}..${newest.short}`,
+      commitCount: n,
+      oldest: publicCommit(oldest),
+      newest: publicCommit(newest),
+      commits: commits.map((c) => publicCommit(c)),
+    },
+  });
 
   /* 1. Investigate ------------------------------------------------------ */
   ui.section("1 · INVESTIGATION");
-  const investigation = await investigate(repo, opts.description, { verbose: opts.verbose });
+  emit({ type: "phase", payload: { phase: "investigate", title: "Dusting the case file" } });
+  const investigation = await investigate(repo, opts.description, {
+    verbose: opts.verbose,
+    onToolCall: (name, args) => emit({ type: "tool", payload: { name, args } }),
+    onEvidence: (items) => emit({ type: "evidence", payload: { items: items.slice(0, 18) } }),
+  });
   console.log(`  ${ui.dim(`${investigation.queries.length} searches · ${investigation.evidence.length} pieces of evidence`)}`);
   if (investigation.notes) console.log(`\n  ${ui.bold("Theory:")} ${investigation.notes.trim().replace(/\n+/g, " ")}\n`);
   ui.evidence(investigation.evidence, 6);
@@ -96,6 +136,20 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       console.log(`   ${ui.bold((s.score * 100).toFixed(0).padStart(3) + "%")} ${c ? `#${c.order} ${c.short} ${c.subject.slice(0, 50)}` : s.sha.slice(0, 7)}\n        ${ui.dim(s.reason.slice(0, 120))}`);
     }
   }
+  emit({ type: "evidence", payload: { items: investigation.evidence.slice(0, 18) } });
+  emit({ type: "theory", payload: { notes: investigation.notes, mode: investigation.mode, queries: investigation.queries } });
+  emit({
+    type: "suspects",
+    payload: {
+      suspects: investigation.suspects.slice(0, 8).map((s) => ({
+        ...s,
+        commit: (() => {
+          const c = commits.find((c) => c.sha === s.sha);
+          return c ? publicCommit(c) : undefined;
+        })(),
+      })),
+    },
+  });
 
   /* 2. Reproduce -------------------------------------------------------- */
   ui.section("2 · REPRODUCTION");
@@ -116,7 +170,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       test = { command: opts.test, explanation: "user-provided test command", attempts: 0 };
       reproOutputAtHead = v.newest.stdout + v.newest.stderr;
     } else {
-      if (!hasLLM()) throw new Error("No OPENAI_API_KEY: either set it so the agent can write a reproduction, or pass --test '<command>'.");
+      if (!hasLLM()) throw new Error("No GEMINI_API_KEY: either set it so the agent can write a reproduction, or pass --test '<command>'.");
       console.log(`  ${ui.dim("Writing a reproduction script that must fail at HEAD and pass at the oldest commit…")}`);
       const r = await synthesizeRepro({
         repoPath: opts.repoPath,
@@ -138,6 +192,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     }
     const headOut = reproOutputAtHead.trim().split("\n").slice(-3).join("\n      ");
     if (headOut) console.log(`  ${ui.dim("at HEAD:")} ${ui.dim(headOut.slice(0, 300))}`);
+    emit({ type: "repro", payload: { explanation: test.explanation, command: test.command, headOutput: reproOutputAtHead.trim().slice(-400) } });
 
     /* 3. Bayesian bisection ------------------------------------------- */
     ui.section("3 · BAYESIAN BISECTION");
@@ -157,12 +212,23 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     console.log(`  90% credible set: ${ui.bold(String(credibleSet(state, 0.9).length))} commits\n`);
     ui.posterior(state, (i) => `${commits[i].short} ${commits[i].subject}`, { maxRows: 10 });
     console.log();
+    emit({
+      type: "prior",
+      payload: {
+        entropyBits: priorBits,
+        uniformBits: Math.log2(n - 1),
+        uniformProbes: uniformProbes(n - 1),
+        credible90: credibleSet(state, 0.9).length,
+        board: boardOf(commits, state.posterior, new Map([[0, "good"], [n - 1, "bad"]])),
+      },
+    });
+    emit({ type: "phase", payload: { phase: "bisect", title: "Interrogation room" } });
 
     const threshold = opts.confidence ?? 0.95;
     const maxProbes = opts.maxProbes ?? Math.max(8, uniformProbes(n) + 4);
     let step = 0;
     const cache = new Map<number, "good" | "bad">([[0, "good"], [n - 1, "bad"]]);
-    const probe = async (k: number) => {
+    const probe = async (k: number, by: "detective" | "player" = "detective") => {
       step++;
       const c = commits[k];
       const pb = pBad(state, k);
@@ -171,6 +237,11 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       cache.set(k, result);
       update(state, k, result, r.durationMs);
       ui.probeLine(step, k, c.short, c.subject, result, pb, r.durationMs);
+      emit({
+        type: "probe",
+        payload: { step, index: k, commit: publicCommit(c, { probed: result, p: state.posterior[k] }), result, pBad: pb, durationMs: r.durationMs, by },
+      });
+      emit({ type: "posterior", payload: { board: boardOf(commits, state.posterior, cache), highlight: k } });
       return result;
     };
 
@@ -189,9 +260,31 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
         await probe(c - 1);
         continue;
       }
-      const k = nextProbe(state);
+      let k = nextProbe(state);
       if (k === null) break;
-      await probe(k);
+      if (opts.chooseProbe) {
+        const autoIndex = k;
+        emit({
+          type: "awaiting_probe",
+          payload: {
+            step: step + 1,
+            autoIndex,
+            autoCommit: publicCommit(commits[autoIndex]),
+            board: boardOf(commits, state.posterior, cache, 18),
+            message: "Pick a commit to interrogate — or let the detective take the information-optimal probe.",
+          },
+        });
+        const choice = await opts.chooseProbe({
+          caseId,
+          step: step + 1,
+          autoIndex,
+          board: boardOf(commits, state.posterior, cache, 24),
+        });
+        if (typeof choice === "number" && choice >= 0 && choice < n) k = choice;
+        await probe(k, typeof choice === "number" && choice !== autoIndex ? "player" : "detective");
+      } else {
+        await probe(k, "detective");
+      }
     }
 
     const { index: culpritIdx, p: conf } = mostLikely(state);
@@ -203,6 +296,10 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     ui.ok(
       `Culprit ${ui.bold(`#${culpritIdx} ${culprit.short}`)} with ${ui.bold((conf * 100).toFixed(1) + "%")} confidence after ${ui.bold(String(step))} probes ${ui.dim(`(git bisect would have needed ${uniformSteps})`)}`,
     );
+    emit({
+      type: "culprit",
+      payload: { commit: publicCommit(culprit, { p: conf, probed: "bad" }), confidence: conf, probes: step, uniformSteps },
+    });
 
     /* 4. Verdict ---------------------------------------------------- */
     ui.section("4 · VERDICT");
@@ -224,12 +321,13 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
     });
     spin.stop("Case report ready");
     console.log("\n" + indent(verdict) + "\n");
+    emit({ type: "verdict", payload: { markdown: verdict } });
 
     /* 5. Amends ----------------------------------------------------- */
     let amends: AmendsResult | undefined;
     if (opts.fix) {
       ui.section("5 · AMENDS");
-      if (!hasLLM()) ui.warn("--fix needs OPENAI_API_KEY; skipping.");
+          if (!hasLLM()) ui.warn("--fix needs GEMINI_API_KEY; skipping.");
       else {
         const spinFix = ui.spinner("Drafting a minimal fix and proving it with the reproduction");
         try {
@@ -253,6 +351,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
           if (amends.verifyPassed !== undefined) ui.kv("verify", amends.verifyPassed ? "passed" : "failed");
           if (amends.prUrl) ui.kv("pull request", amends.prUrl);
           else console.log(`  ${ui.dim(`review with: git -C ${opts.repoPath} diff HEAD..${amends.branch}`)}`);
+          emit({ type: "amends", payload: amends });
         } catch (e) {
           spinFix.stop(`No fix: ${e instanceof Error ? e.message : e}`, false);
         }
@@ -285,6 +384,7 @@ export async function solveCase(opts: SolveOptions): Promise<CaseResult> {
       "_key",
     ).catch(() => {});
     ui.info(`Case file written to ${caseFile}`);
+    emit({ type: "closed", payload: { caseId, caseFile } });
 
     return { caseId, culprit, state, investigation, test, verdict, amends, uniformSteps, caseFile };
   } finally {

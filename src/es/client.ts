@@ -57,9 +57,24 @@ const codeSettings: import("@elastic/elasticsearch/lib/api/types").IndicesIndexS
   },
 };
 
+let serverlessCache: boolean | null = null;
+async function isServerless(client: ReturnType<typeof es>): Promise<boolean> {
+  if (serverlessCache !== null) return serverlessCache;
+  try {
+    const info = await client.info();
+    serverlessCache = info.version.build_flavor === "serverless";
+  } catch {
+    serverlessCache = false;
+  }
+  return serverlessCache;
+}
+
 export async function ensureIndices(dims: number | null, reset = false): Promise<void> {
   const client = es();
   const vec = dims ? { embedding: denseVector(dims) } : {};
+  const serverless = await isServerless(client);
+  // Serverless manages shards/replicas itself and rejects these settings.
+  const shardSettings = serverless ? {} : { number_of_shards: 1, number_of_replicas: 0 };
 
   const defs: Record<string, Record<string, unknown>> = {
     [INDEX.commits]: {
@@ -132,7 +147,7 @@ export async function ensureIndices(dims: number | null, reset = false): Promise
     if (!exists || doReset) {
       await client.indices.create({
         index: name,
-        settings: { number_of_shards: 1, number_of_replicas: 0, ...codeSettings },
+        settings: { ...shardSettings, ...codeSettings },
         mappings: { properties: properties as never },
       });
     }

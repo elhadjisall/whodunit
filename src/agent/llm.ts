@@ -1,17 +1,15 @@
-import OpenAI from "openai";
-import type { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources/chat/completions";
 import { config } from "../config.js";
 
-let _client: OpenAI | null = null;
+const GEMINI_ROOT = "https://generativelanguage.googleapis.com/v1beta";
 
-export function hasLLM(): boolean {
-  return !!config.openaiApiKey;
-}
+type GeminiPart = {
+  text?: string;
+  thoughtSignature?: string;
+  functionCall?: { name: string; args?: Record<string, unknown>; id?: string };
+  functionResponse?: { name: string; id?: string; response: Record<string, unknown> };
+};
 
-export function openai(): OpenAI {
-  if (!config.openaiApiKey) throw new Error("OPENAI_API_KEY is not set — the detective needs a brain.");
-  return (_client ??= new OpenAI({ apiKey: config.openaiApiKey }));
-}
+type GeminiContent = { role?: string; parts: GeminiPart[] };
 
 export interface ToolDef<TArgs = Record<string, unknown>> {
   name: string;
@@ -26,9 +24,69 @@ export interface ToolLoopResult {
   usage: { prompt: number; completion: number };
 }
 
+export function hasLLM(): boolean {
+  return !!config.geminiApiKey;
+}
+
+export function llmLabel(): string {
+  return hasLLM() ? `Gemini ${config.geminiModel}` : "none (heuristic)";
+}
+
+export async function geminiFetch(url: string, apiKey: string, body: unknown, what: string): Promise<unknown> {
+  let last = "";
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(body),
+    });
+    const json = (await res.json()) as { error?: { message?: string; details?: { "@type"?: string; retryDelay?: string }[] } };
+    if (res.ok) return json;
+    last = json.error?.message ?? res.statusText;
+    const retryable = res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === 7) throw new Error(`${what} failed: ${res.status} ${last}`);
+    const hinted = json.error?.details?.find((d) => d.retryDelay)?.retryDelay;
+    const sec = hinted ? Math.max(1, parseInt(hinted, 10) || 0) : Math.min(60, 2 ** attempt * 2);
+    await new Promise((r) => setTimeout(r, (sec + 1) * 1000));
+  }
+  throw new Error(`${what} failed: ${last}`);
+}
+
+async function geminiGenerate(body: Record<string, unknown>): Promise<{
+  content: GeminiContent;
+  text: string;
+  usage: { prompt: number; completion: number };
+}> {
+  if (!config.geminiApiKey) throw new Error("GEMINI_API_KEY is not set — the detective needs a brain.");
+  const url = `${GEMINI_ROOT}/models/${config.geminiModel}:generateContent`;
+  const json = (await geminiFetch(url, config.geminiApiKey, body, "Gemini")) as {
+    error?: { message: string };
+    candidates?: { content?: GeminiContent; finishReason?: string }[];
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  const content = json.candidates?.[0]?.content ?? { role: "model", parts: [] };
+  const text = (content.parts ?? []).map((p) => p.text ?? "").join("");
+  return {
+    content,
+    text,
+    usage: {
+      prompt: json.usageMetadata?.promptTokenCount ?? 0,
+      completion: json.usageMetadata?.candidatesTokenCount ?? 0,
+    },
+  };
+}
+
+function declarations(tools: ToolDef<never>[]) {
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters,
+  }));
+}
+
 /**
- * Generic tool-calling loop. The model may call tools as many times as it likes (bounded by
- * maxTurns); when it replies with plain text, the loop ends.
+ * Generic tool-calling loop against Gemini 3.x. Thought signatures on model parts are
+ * preserved and sent back — Gemini 3 requires that for multi-turn function calling.
  */
 export async function runToolLoop(
   system: string,
@@ -36,77 +94,69 @@ export async function runToolLoop(
   tools: ToolDef<never>[],
   opts: { maxTurns?: number; onToolCall?: (name: string, args: Record<string, unknown>) => void } = {},
 ): Promise<ToolLoopResult> {
-  const client = openai();
-  const messages: ChatCompletionMessageParam[] = [
-    { role: "system", content: system },
-    { role: "user", content: user },
-  ];
-  const toolSpecs: ChatCompletionTool[] = tools.map((t) => ({
-    type: "function",
-    function: { name: t.name, description: t.description, parameters: t.parameters },
-  }));
+  const maxTurns = opts.maxTurns ?? 12;
+  const contents: GeminiContent[] = [{ role: "user", parts: [{ text: user }] }];
   const byName = new Map(tools.map((t) => [t.name, t]));
   const calls: ToolLoopResult["toolCalls"] = [];
   const usage = { prompt: 0, completion: 0 };
 
-  for (let turn = 0; turn < (opts.maxTurns ?? 12); turn++) {
-    const res = await client.chat.completions.create({
-      model: config.openaiModel,
-      messages,
-      tools: toolSpecs,
-      tool_choice: turn === (opts.maxTurns ?? 12) - 1 ? "none" : "auto",
+  for (let turn = 0; turn < maxTurns; turn++) {
+    const lastTurn = turn === maxTurns - 1;
+    const reply = await geminiGenerate({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      tools: tools.length ? [{ functionDeclarations: declarations(tools) }] : undefined,
+      toolConfig: lastTurn ? { functionCallingConfig: { mode: "NONE" } } : { functionCallingConfig: { mode: "AUTO" } },
     });
-    usage.prompt += res.usage?.prompt_tokens ?? 0;
-    usage.completion += res.usage?.completion_tokens ?? 0;
-    const msg = res.choices[0].message;
-    messages.push(msg);
-    if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      return { finalText: msg.content ?? "", toolCalls: calls, usage };
-    }
-    for (const tc of msg.tool_calls) {
-      if (tc.type !== "function") continue;
-      const tool = byName.get(tc.function.name);
-      let args: Record<string, unknown> = {};
-      try {
-        args = JSON.parse(tc.function.arguments || "{}");
-      } catch {
-        /* keep {} */
-      }
-      opts.onToolCall?.(tc.function.name, args);
+    usage.prompt += reply.usage.prompt;
+    usage.completion += reply.usage.completion;
+    contents.push({ role: "model", parts: reply.content.parts ?? [] });
+
+    const fnParts = (reply.content.parts ?? []).filter((p) => p.functionCall?.name);
+    if (fnParts.length === 0) return { finalText: reply.text, toolCalls: calls, usage };
+
+    const responseParts: GeminiPart[] = [];
+    for (const part of fnParts) {
+      const fc = part.functionCall!;
+      const args = (fc.args ?? {}) as Record<string, unknown>;
+      opts.onToolCall?.(fc.name, args);
+      const tool = byName.get(fc.name);
       let result: string;
       try {
-        result = tool ? await tool.handler(args as never) : `unknown tool ${tc.function.name}`;
+        result = tool ? await tool.handler(args as never) : `unknown tool ${fc.name}`;
       } catch (e) {
         result = `tool error: ${e instanceof Error ? e.message : String(e)}`;
       }
-      calls.push({ name: tc.function.name, args, result });
-      messages.push({ role: "tool", tool_call_id: tc.id, content: result.slice(0, 30_000) });
+      calls.push({ name: fc.name, args, result });
+      responseParts.push({
+        functionResponse: {
+          name: fc.name,
+          id: fc.id,
+          response: { result: result.slice(0, 30_000) },
+        },
+      });
     }
+    contents.push({ role: "user", parts: responseParts });
   }
   return { finalText: "", toolCalls: calls, usage };
 }
 
-/** Ask for a JSON object and parse it. */
 export async function chatJSON<T>(system: string, user: string): Promise<T> {
-  const res = await openai().chat.completions.create({
-    model: config.openaiModel,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: { type: "json_object" },
+  const reply = await geminiGenerate({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text: user }] }],
+    generationConfig: { responseMimeType: "application/json" },
   });
-  const text = res.choices[0].message.content ?? "{}";
-  return JSON.parse(text) as T;
+  const text = reply.text.trim() || "{}";
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  return JSON.parse(start >= 0 ? text.slice(start, end + 1) : text) as T;
 }
 
 export async function chatText(system: string, user: string): Promise<string> {
-  const res = await openai().chat.completions.create({
-    model: config.openaiModel,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
+  const reply = await geminiGenerate({
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text: user }] }],
   });
-  return res.choices[0].message.content ?? "";
+  return reply.text;
 }
