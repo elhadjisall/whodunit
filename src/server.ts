@@ -147,6 +147,17 @@ export async function startPlayServer(opts: { port: number; repoPath?: string })
         return;
       }
 
+      if (url.pathname === "/api/hunks" && req.method === "GET") {
+        const sha = (url.searchParams.get("sha") ?? "").replace(/[^0-9a-f]/gi, "").slice(0, 40);
+        if (!sha) {
+          json(res, { error: "sha required" }, 400);
+          return;
+        }
+        const hunks = await commitHunks(repoPath, sha).catch(() => []);
+        json(res, { hunks: hunks.map((h) => ({ file: h.file, header: h.header, text: h.text.slice(0, 6000) })) });
+        return;
+      }
+
       if (url.pathname === "/api/play" && req.method === "POST") {
         const body = JSON.parse((await readBody(req)) || "{}") as {
           description?: string;

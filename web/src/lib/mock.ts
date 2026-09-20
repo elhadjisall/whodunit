@@ -260,7 +260,7 @@ export function startMockCase(opts: CaseOptions, onEvent: (e: CaseEvent) => void
     ]);
     const board = () => {
       const max = Math.max(...state.posterior, 1e-9);
-      return COMMITS.map((c, i) => pub(i, { p: state.posterior[i] / max, mass: state.posterior[i], probed: cache.get(i) }));
+      return COMMITS.map((_, i) => pub(i, { p: state.posterior[i] / max, mass: state.posterior[i], probed: cache.get(i) }));
     };
     const priorBits = entropyBits(state.posterior);
     emit({

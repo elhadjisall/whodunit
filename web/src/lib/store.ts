@@ -352,13 +352,17 @@ export function reduce(prev: CaseState, action: Action): CaseState {
 
 /* ───────── derived helpers ───────── */
 
+/** Who gets a mugshot on the cork board: everyone interrogated, plus the hottest remaining suspects. */
 export function topSuspects(state: CaseState, n = 12): PublicCommit[] {
-  const scored = state.commits.filter((c) => (c.p ?? 0) > 0 || c.probed || state.similarity[c.sha]);
-  const pool = scored.length ? scored : state.commits;
-  return [...pool]
-    .sort((a, b) => (b.p ?? 0) - (a.p ?? 0) || (state.similarity[b.sha] ?? 0) - (state.similarity[a.sha] ?? 0))
-    .slice(0, n)
-    .sort((a, b) => a.index - b.index);
+  const pinned = new Set<number>();
+  for (const p of state.probes) pinned.add(p.index);
+  if (state.targeting) pinned.add(state.targeting.index);
+  if (state.culprit) pinned.add(state.culprit.commit.index);
+  const must = state.commits.filter((c) => pinned.has(c.index));
+  const rest = state.commits
+    .filter((c) => !pinned.has(c.index) && ((c.p ?? 0) > 0 || state.similarity[c.sha]))
+    .sort((a, b) => (b.p ?? 0) - (a.p ?? 0) || (state.similarity[b.sha] ?? 0) - (state.similarity[a.sha] ?? 0));
+  return [...must, ...rest].slice(0, Math.max(n, must.length)).sort((a, b) => a.index - b.index);
 }
 
 export function bracket(state: CaseState): { lo: number; hi: number } {
