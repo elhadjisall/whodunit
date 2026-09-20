@@ -1,0 +1,31 @@
+{
+  "name": "whodunit",
+  "version": "0.1.0",
+  "description": "git bisect with a brain: an Elasticsearch-backed detective agent that finds the commit that broke your code, cites the evidence, and fixes it.",
+  "type": "module",
+  "bin": {
+    "whodunit": "./bin/whodunit.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "es:start": "bash scripts/es-local.sh start",
+    "es:stop": "bash scripts/es-local.sh stop",
+    "demo:generate": "tsx src/cli.ts demo generate",
+    "demo:index": "tsx src/cli.ts index --repo /tmp/whodunit-demo/acme-ledger"
+  },
+  "keywords": ["git", "bisect", "elasticsearch", "agent", "debugging", "developer-tools"],
+  "license": "MIT",
+  "dependencies": {
+    "@elastic/elasticsearch": "^9.4.3",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "openai": "^6.49.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  }
+}
